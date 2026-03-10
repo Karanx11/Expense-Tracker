@@ -1,38 +1,43 @@
-import 'package:expense_tracker_app_frontend/screens/register_screen.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'dashboard_screen.dart';
+import 'otp_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
   bool loading = false;
 
-  void login() async {
+  void register() async {
     try {
       setState(() {
         loading = true;
       });
 
-      final res = await ApiService.login(
+      await ApiService.signup(
+        nameController.text,
         emailController.text,
         passwordController.text,
       );
 
-      if (res["token"] != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const DashboardScreen()),
-        );
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("OTP sent to email")));
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpScreen(email: emailController.text),
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -47,13 +52,20 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Expense Tracker Login")),
+      appBar: AppBar(title: const Text("Register")),
 
       body: Padding(
         padding: const EdgeInsets.all(20),
 
         child: Column(
           children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: "Name"),
+            ),
+
+            const SizedBox(height: 10),
+
             TextField(
               controller: emailController,
               decoration: const InputDecoration(labelText: "Email"),
@@ -70,19 +82,10 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 20),
 
             ElevatedButton(
-              onPressed: loading ? null : login,
+              onPressed: loading ? null : register,
               child: loading
                   ? const CircularProgressIndicator()
-                  : const Text("Login"),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                );
-              },
-              child: const Text("Create Account"),
+                  : const Text("Register"),
             ),
           ],
         ),

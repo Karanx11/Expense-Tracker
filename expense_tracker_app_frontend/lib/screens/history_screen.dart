@@ -15,15 +15,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    fetchExpenses();
+    loadExpenses();
   }
 
-  Future fetchExpenses() async {
+  void loadExpenses() async {
     try {
-      final data = await ApiService.getExpenses();
+      final res = await ApiService.getExpenses();
 
       setState(() {
-        expenses = data;
+        expenses = res;
         loading = false;
       });
     } catch (e) {
@@ -31,10 +31,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
   }
 
-  Future<void> deleteExpense(String id) async {
+  void deleteExpense(String id) async {
     await ApiService.deleteExpense(id);
 
-    fetchExpenses();
+    loadExpenses();
   }
 
   @override
@@ -44,79 +44,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
-
-      appBar: AppBar(
-        title: const Text("Transaction History"),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("Expense History")),
 
       body: ListView.builder(
-        padding: const EdgeInsets.all(16),
         itemCount: expenses.length,
 
         itemBuilder: (context, index) {
           final exp = expenses[index];
 
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(14),
-            ),
-
-            child: Row(
+          return ListTile(
+            title: Text(exp["title"]),
+            subtitle: Text(exp["category"]),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.orange,
-                  child: Icon(Icons.money, color: Colors.white),
-                ),
+                Text("₹${exp["amount"]}"),
 
-                const SizedBox(width: 12),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exp["title"],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-
-                      Text(
-                        exp["category"],
-                        style: const TextStyle(
-                          color: Colors.white60,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Column(
-                  children: [
-                    Text(
-                      "₹${exp["amount"]}",
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        deleteExpense(exp["_id"]);
-                      },
-                    ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () {
+                    deleteExpense(exp["_id"]);
+                  },
                 ),
               ],
             ),

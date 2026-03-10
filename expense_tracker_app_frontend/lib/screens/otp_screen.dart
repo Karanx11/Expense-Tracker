@@ -16,27 +16,32 @@ class _OtpScreenState extends State<OtpScreen> {
 
   bool loading = false;
 
-  Future<void> verifyOtp() async {
-    setState(() {
-      loading = true;
-    });
+  void verifyOtp() async {
+    try {
+      setState(() {
+        loading = true;
+      });
 
-    final res = await ApiService.verifyOtp(widget.email, otpController.text);
+      await ApiService.verifyOtp(widget.email, otpController.text);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Account verified! Please login")),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
 
     setState(() {
       loading = false;
     });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(res["message"])));
-
-    if (res["message"] == "Email verified successfully") {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
-    }
   }
 
   @override
@@ -49,17 +54,17 @@ class _OtpScreenState extends State<OtpScreen> {
 
         child: Column(
           children: [
-            const Text("Enter OTP sent to email"),
+            Text("Enter OTP sent to ${widget.email}"),
 
             const SizedBox(height: 20),
 
             TextField(
               controller: otpController,
-              decoration: const InputDecoration(labelText: "OTP"),
               keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: "OTP"),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
 
             ElevatedButton(
               onPressed: loading ? null : verifyOtp,
