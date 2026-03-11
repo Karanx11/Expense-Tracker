@@ -26,18 +26,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     Colors.amber,
   ];
 
-  /// COLORS FOR BAR CHART
-  final List<Color> barColors = [
-    Colors.blue,
-    Colors.green,
-    Colors.orange,
-    Colors.purple,
-    Colors.red,
-    Colors.teal,
-    Colors.pink,
-    Colors.amber,
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -76,41 +64,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return data;
   }
 
-  /// DAILY DATA
-  Map<int, double> getDailyData() {
-    Map<int, double> data = {};
-
-    for (var e in expenses) {
-      int day = e.date.day;
-      data[day] = (data[day] ?? 0) + e.amount;
-    }
-
-    return data;
-  }
-
-  /// BUILD DAILY BAR CHART
-  List<BarChartGroupData> buildDailyBars(Map<int, double> data) {
-    List<BarChartGroupData> bars = [];
-
-    data.forEach((day, amount) {
-      bars.add(
-        BarChartGroupData(
-          x: day,
-          barRods: [
-            BarChartRodData(
-              toY: amount,
-              width: 14,
-              color: barColors[day % barColors.length],
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        ),
-      );
-    });
-
-    return bars;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -122,7 +75,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     }
 
     final categoryTotals = calculateCategoryTotals();
-    final dailyData = getDailyData();
 
     int index = 0;
 
@@ -170,47 +122,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   sections: sections,
                   sectionsSpace: 3,
                   centerSpaceRadius: 40,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 40),
-
-            /// DAILY BAR CHART
-            const Text(
-              "Daily Spending",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 20),
-
-            SizedBox(
-              height: 260,
-              child: BarChart(
-                BarChartData(
-                  barGroups: buildDailyBars(dailyData),
-
-                  titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: true),
-                    ),
-
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        interval: 1,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-
-                  gridData: const FlGridData(show: true),
-                  borderData: FlBorderData(show: false),
                 ),
               ),
             ),

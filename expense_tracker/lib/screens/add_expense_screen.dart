@@ -45,7 +45,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     });
 
     try {
-      final result = await ApiService.addExpense(
+      await ApiService.addExpense(
         amount,
         category,
         paymentType,
@@ -53,31 +53,24 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         DateTime.now().toIso8601String(),
       );
 
-      print("Saving expense...");
-      print("Amount: $amount");
-      print("Category: $category");
-
       if (!mounted) return;
 
-      if (result["message"] != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Expense added successfully")),
-        );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Expense added successfully")),
+      );
 
-        Navigator.pop(context, true);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result["error"] ?? "Failed to add expense")),
-        );
-      }
+      /// Safely return to dashboard
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) Navigator.pop(context, true);
+      });
     } catch (e) {
-      print(e);
+      debugPrint("Expense error: $e");
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error: $e")));
+      ).showSnackBar(const SnackBar(content: Text("Failed to add expense")));
     } finally {
       if (mounted) {
         setState(() {
@@ -130,7 +123,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               /// CATEGORY
               DropdownButtonFormField(
                 value: category,
-                dropdownColor: const Color(0xFF0B2E33),
 
                 items: categories.map((cat) {
                   return DropdownMenuItem(value: cat, child: Text(cat));
@@ -153,7 +145,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               /// PAYMENT TYPE
               DropdownButtonFormField(
                 value: paymentType,
-                dropdownColor: const Color(0xFF0B2E33),
 
                 items: const [
                   DropdownMenuItem(value: "Cash", child: Text("Cash")),
