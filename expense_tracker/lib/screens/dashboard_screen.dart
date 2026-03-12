@@ -147,13 +147,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             double remaining = monthlyLimit - totalSpent;
 
-            /// EXPENSE NOTIFICATION
             await NotificationService.showExpenseNotification(
               transaction["amount"],
               remaining,
             );
 
-            /// LIMIT WARNING
             if (totalSpent > monthlyLimit) {
               await NotificationService.showLimitWarning();
             }
@@ -218,6 +216,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${top.key} ₹${top.value.toStringAsFixed(0)}";
   }
 
+  /// BUDGET BAR COLOR
+  Color getBudgetColor(double progress) {
+    if (progress < 0.4) {
+      return Colors.green;
+    } else if (progress < 0.7) {
+      return Colors.blue;
+    } else if (progress < 0.9) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double remaining = monthlyLimit - totalSpent;
@@ -236,6 +247,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
+
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -273,20 +285,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.money),
-                              title: const Text("Cash"),
-                              trailing: Text("₹$cashTotal"),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.money),
+                                  const SizedBox(height: 6),
+                                  const Text("Cash"),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "₹$cashTotal",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
+
                         const SizedBox(width: 10),
+
                         Expanded(
                           child: Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.credit_card),
-                              title: const Text("Online"),
-                              trailing: Text("₹$onlineTotal"),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.credit_card),
+                                  const SizedBox(height: 6),
+                                  const Text("Online"),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "₹$onlineTotal",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -295,7 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// BUDGET PROGRESS
+                    /// MONTHLY BUDGET
                     const Text(
                       "Monthly Budget",
                       style: TextStyle(fontSize: 16),
@@ -303,7 +343,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 10),
 
-                    LinearProgressIndicator(value: progress, minHeight: 10),
+                    LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 10,
+                      backgroundColor: Colors.grey.shade300,
+                      valueColor: AlwaysStoppedAnimation(
+                        getBudgetColor(progress),
+                      ),
+                    ),
 
                     const SizedBox(height: 8),
 
@@ -354,17 +401,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   : Icons.credit_card,
                               color: const Color(0xFF4F7C82),
                             ),
-
                             title: Text(e.note),
-
-                            /// CATEGORY + DATE
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(e.category),
-
                                 const SizedBox(height: 3),
-
                                 Text(
                                   DateFormat(
                                     "dd MMM yyyy • HH:mm",
@@ -376,7 +418,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               ],
                             ),
-
                             trailing: Text(
                               "₹${e.amount}",
                               style: const TextStyle(

@@ -12,6 +12,8 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   String name = "";
   String email = "";
+  String phone = "";
+
   bool loading = true;
 
   @override
@@ -20,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     loadProfile();
   }
 
+  /// LOAD PROFILE
   Future loadProfile() async {
     try {
       final data = await ApiService.getProfile();
@@ -27,6 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         name = data["name"] ?? "";
         email = data["email"] ?? "";
+        phone = data["phone"] ?? "";
         loading = false;
       });
     } catch (e) {
@@ -40,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  /// LOGOUT
   Future<void> logout() async {
     await ApiService.logout();
 
@@ -50,22 +55,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// DELETE ACCOUNT
   Future deleteAccount() async {
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text("Delete Account"),
-          content: const Text(
-            "Are you sure you want to delete your account? This action cannot be undone.",
-          ),
-
+          content: const Text("Are you sure you want to delete your account?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
             ),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () async {
@@ -87,6 +89,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget box(Widget child) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(padding: const EdgeInsets.all(16), child: child),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,47 +109,116 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               child: Column(
                 children: [
-                  const SizedBox(height: 20),
-
-                  const CircleAvatar(
-                    radius: 45,
-                    backgroundColor: Color(0xFF4F7C82),
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  /// PROFILE PHOTO
+                  box(
+                    const Center(
+                      child: CircleAvatar(
+                        radius: 45,
+                        backgroundColor: Color(0xFF4F7C82),
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 15),
 
-                  Text(email, style: const TextStyle(color: Colors.grey)),
-
-                  const SizedBox(height: 40),
-
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.logout),
-                      title: const Text("Logout"),
-                      onTap: logout,
+                  /// NAME
+                  box(
+                    Row(
+                      children: [
+                        const Icon(Icons.person),
+                        const SizedBox(width: 10),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.delete, color: Colors.red),
-                      title: const Text("Delete Account"),
-                      onTap: deleteAccount,
+                  /// EMAIL
+                  box(
+                    Row(
+                      children: [
+                        const Icon(Icons.email),
+                        const SizedBox(width: 10),
+                        Text(email),
+                      ],
                     ),
                   ),
+
+                  const SizedBox(height: 10),
+
+                  /// PHONE
+                  box(
+                    Row(
+                      children: [
+                        const Icon(Icons.phone),
+                        const SizedBox(width: 10),
+                        Text(phone.isEmpty ? "Not provided" : phone),
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  /// LOGOUT BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: logout,
+                      icon: const Icon(Icons.logout),
+                      label: const Text("Logout"),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /// DELETE ACCOUNT BUTTON
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: deleteAccount,
+                      icon: const Icon(Icons.delete),
+                      label: const Text("Delete Account"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: const EdgeInsets.all(14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  /// FOOTER
+                  const Text(
+                    "Built by Karan",
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
                 ],
               ),
             ),

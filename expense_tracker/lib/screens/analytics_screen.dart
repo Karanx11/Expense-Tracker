@@ -14,7 +14,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   List<Expense> expenses = [];
   bool loading = true;
 
-  /// COLORS FOR PIE CHART
   final List<Color> pieColors = [
     Colors.red,
     Colors.blue,
@@ -37,7 +36,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     try {
       final data = await ApiService.getExpenses();
 
-      expenses = data.map<Expense>((e) => Expense.fromJson(e)).toList();
+      if (data is List) {
+        expenses = data.map<Expense>((e) => Expense.fromJson(e)).toList();
+      }
 
       setState(() {
         loading = false;
@@ -64,6 +65,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     return data;
   }
 
+  /// MONTHLY TOTAL
+  double calculateMonthlyTotal() {
+    DateTime now = DateTime.now();
+
+    double total = 0;
+
+    for (var e in expenses) {
+      if (e.date.month == now.month && e.date.year == now.year) {
+        total += e.amount;
+      }
+    }
+
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading) {
@@ -78,7 +94,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     int index = 0;
 
-    /// PIE CHART SECTIONS
     List<PieChartSectionData> sections = categoryTotals.entries.map((entry) {
       final color = pieColors[index % pieColors.length];
 
@@ -107,7 +122,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
         child: Column(
           children: [
-            /// CATEGORY PIE CHART
+            /// PIE CHART
             const Text(
               "Category Spending",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -152,6 +167,50 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   ),
                 );
               }).toList(),
+            ),
+
+            const SizedBox(height: 30),
+
+            /// MONTHLY TOTAL CARD
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Total Spent This Month",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          "Real-time calculation",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+
+                    Text(
+                      "₹${calculateMonthlyTotal().toStringAsFixed(0)}",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
