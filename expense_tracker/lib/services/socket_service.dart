@@ -5,7 +5,7 @@ class SocketService {
 
   void connect() {
     socket = IO.io(
-      "http://10.30.227.31:5000",
+      "https://expense-backend-sz71.onrender.com/",
       IO.OptionBuilder()
           .setTransports(['websocket'])
           .disableAutoConnect()
