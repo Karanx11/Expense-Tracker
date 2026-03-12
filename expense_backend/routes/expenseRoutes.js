@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   addExpense,
   getExpenses,
-  deleteExpense
+  deleteExpense,
 } = require("../controllers/expenseController");
 
 const authMiddleware = require("../middleware/authMiddleware");

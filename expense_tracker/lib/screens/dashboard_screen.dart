@@ -6,6 +6,7 @@ import '../services/socket_service.dart';
 import '../utils/sms_parser.dart';
 import '../services/notification_service.dart';
 import 'history_screen.dart';
+import 'package:intl/intl.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -30,14 +31,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final SmsService smsService = SmsService();
   final SocketService socketService = SocketService();
 
+  bool smsChecked = false;
+
   @override
   void initState() {
     super.initState();
 
     checkMonthlyReset();
-
     loadExpenses();
-    fetchSmsExpenses();
 
     socketService.connect();
 
@@ -70,7 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// FETCH EXPENSES
-  Future loadExpenses() async {
+  Future<void> loadExpenses() async {
     try {
       final data = await ApiService.getExpenses();
 
@@ -78,17 +79,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       calculateTotals();
 
-      setState(() {
-        loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        loading = false;
-      });
+      if (!smsChecked) {
+        fetchSmsExpenses();
+        smsChecked = true;
+      }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to load expenses")));
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          loading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to load expenses")),
+        );
+      }
     }
   }
 
@@ -111,20 +121,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   /// AUTO SMS EXPENSE DETECTION
   Future<void> fetchSmsExpenses() async {
-    final messages = await smsService.getMessages();
+    try {
+      final messages = await smsService.getMessages();
 
-    for (var sms in messages.take(20)) {
-      final transaction = parseTransaction(sms.body ?? "");
+      for (var sms in messages.take(20)) {
+        final transaction = parseTransaction(sms.body ?? "");
 
-      if (transaction != null) {
-        bool exists = expenses.any(
-          (e) =>
-              e.amount == transaction["amount"] &&
-              e.note == transaction["note"],
-        );
+        if (transaction != null) {
+          bool exists = expenses.any(
+            (e) =>
+                e.amount == transaction["amount"] &&
+                e.note == transaction["note"],
+          );
 
-        if (!exists) {
-          try {
+          if (!exists) {
             await ApiService.addExpense(
               transaction["amount"],
               transaction["category"],
@@ -137,21 +147,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             double remaining = monthlyLimit - totalSpent;
 
-            /// SHOW EXPENSE NOTIFICATION
+            /// EXPENSE NOTIFICATION
             await NotificationService.showExpenseNotification(
               transaction["amount"],
               remaining,
             );
 
-            /// SHOW LIMIT WARNING
+            /// LIMIT WARNING
             if (totalSpent > monthlyLimit) {
               await NotificationService.showLimitWarning();
             }
-          } catch (_) {}
-        }
+          }
 
-        break;
+          break;
+        }
       }
+    } catch (e) {
+      print("SMS Parsing Error: $e");
     }
   }
 
@@ -171,20 +183,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),
+              onPressed: () => Navigator.pop(context),
             ),
             ElevatedButton(
+              child: const Text("Save"),
               onPressed: () {
                 if (controller.text.isNotEmpty) {
                   setState(() {
                     monthlyLimit = double.parse(controller.text);
                   });
                 }
-
                 Navigator.pop(context);
               },
-              child: const Text("Save"),
             ),
           ],
         );
@@ -211,9 +222,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     double remaining = monthlyLimit - totalSpent;
 
-    double progress = monthlyLimit == 0 ? 0 : totalSpent / monthlyLimit;
-
-    if (progress > 1) progress = 1;
+    double progress = monthlyLimit == 0
+        ? 0
+        : (totalSpent / monthlyLimit).clamp(0, 1);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Dashboard")),
@@ -228,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// TOTAL SPENT
+                    /// TOTAL SPENT CARD
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -284,7 +295,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// BUDGET
+                    /// BUDGET PROGRESS
                     const Text(
                       "Monthly Budget",
                       style: TextStyle(fontSize: 16),
@@ -303,9 +314,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: setLimit,
                         icon: const Icon(Icons.account_balance_wallet),
                         label: const Text("Set Monthly Budget"),
+                        onPressed: setLimit,
                       ),
                     ),
 
@@ -341,13 +352,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               e.paymentType == "Cash"
                                   ? Icons.money
                                   : Icons.credit_card,
+                              color: const Color(0xFF4F7C82),
                             ),
+
                             title: Text(e.note),
-                            subtitle: Text(e.category),
+
+                            /// CATEGORY + DATE
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(e.category),
+
+                                const SizedBox(height: 3),
+
+                                Text(
+                                  DateFormat(
+                                    "dd MMM yyyy • HH:mm",
+                                  ).format(e.date),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+
                             trailing: Text(
                               "₹${e.amount}",
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
                               ),
                             ),
                           ),
@@ -360,6 +394,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     /// VIEW ALL
                     Center(
                       child: TextButton(
+                        child: const Text("View All Transactions"),
                         onPressed: () {
                           Navigator.push(
                             context,
@@ -369,7 +404,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                           );
                         },
-                        child: const Text("View All Transactions"),
                       ),
                     ),
                   ],

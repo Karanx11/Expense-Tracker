@@ -1,10 +1,13 @@
 const Expense = require("../models/Expense");
 
+/// ADD EXPENSE
 exports.addExpense = async (req, res) => {
-
   try {
-
     const { amount, category, paymentType, note, date } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({ message: "Amount required" });
+    }
 
     const expense = new Expense({
       userId: req.user.id,
@@ -12,54 +15,78 @@ exports.addExpense = async (req, res) => {
       category,
       paymentType,
       note,
-      date
+      date: date || new Date(),
     });
 
     await expense.save();
-     const io = req.app.get("io");
 
-    io.emit("expenseAdded", expense);
+    /// SOCKET EVENT
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("expenseAdded", expense);
+    }
 
-    res.json({ message: "Expense added", expense });
+    res.status(201).json({
+      message: "Expense added successfully",
+      expense,
+    });
 
   } catch (error) {
-
-    res.status(500).json({ error: error.message });
-
+    console.error("Add Expense Error:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-
 };
 
-exports.getExpenses = async (req, res) => {
 
+/// GET EXPENSES
+exports.getExpenses = async (req, res) => {
   try {
 
     const expenses = await Expense.find({
-      userId: req.user.id
+      userId: req.user.id,
     }).sort({ date: -1 });
 
     res.json(expenses);
 
   } catch (error) {
+    console.error("Get Expenses Error:", error);
 
-    res.status(500).json({ error: error.message });
-
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-
 };
 
-exports.deleteExpense = async (req, res) => {
 
+/// DELETE EXPENSE
+exports.deleteExpense = async (req, res) => {
   try {
 
-    await Expense.findByIdAndDelete(req.params.id);
+    const expense = await Expense.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.user.id,
+    });
 
-    res.json({ message: "Expense deleted" });
+    if (!expense) {
+      return res.status(404).json({
+        message: "Expense not found",
+      });
+    }
+
+    res.json({
+      message: "Expense deleted successfully",
+    });
 
   } catch (error) {
+    console.error("Delete Expense Error:", error);
 
-    res.status(500).json({ error: error.message });
-
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-
 };
