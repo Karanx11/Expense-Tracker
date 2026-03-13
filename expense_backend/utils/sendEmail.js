@@ -4,24 +4,22 @@ const sendEmail = async (email, otp) => {
   try {
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
       },
+      connectionTimeout: 10000
     });
 
-    const mailOptions = {
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "OTP Verification",
-      html: `
-        <h2>Your OTP is: ${otp}</h2>
-        <p>This OTP is valid for 5 minutes.</p>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
+      html: `<h2>Your OTP is ${otp}</h2>`
+    });
 
     console.log("Email sent:", info.response);
 
