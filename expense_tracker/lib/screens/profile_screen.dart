@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -10,9 +10,9 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  String name = "";
-  String email = "";
   String phone = "";
+  String email = "";
+  String uid = "";
 
   bool loading = true;
 
@@ -22,31 +22,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     loadProfile();
   }
 
-  /// LOAD PROFILE
+  /// LOAD PROFILE FROM FIREBASE
   Future loadProfile() async {
-    try {
-      final data = await ApiService.getProfile();
+    User? user = FirebaseAuth.instance.currentUser;
 
-      setState(() {
-        name = data["name"] ?? "";
-        email = data["email"] ?? "";
-        phone = data["phone"] ?? "";
-        loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to load profile")));
-    }
+    setState(() {
+      phone = user?.phoneNumber ?? "";
+      email = user?.email ?? "Not provided";
+      uid = user?.uid ?? "";
+      loading = false;
+    });
   }
 
   /// LOGOUT
-  Future<void> logout() async {
-    await ApiService.logout();
+  Future logout() async {
+    await FirebaseAuth.instance.signOut();
 
     Navigator.pushAndRemoveUntil(
       context,
@@ -73,7 +63,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPressed: () async {
                 Navigator.pop(context);
 
-                await ApiService.deleteAccount();
+                User? user = FirebaseAuth.instance.currentUser;
+
+                await user?.delete();
 
                 Navigator.pushAndRemoveUntil(
                   context,
@@ -92,8 +84,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget box(Widget child) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(padding: const EdgeInsets.all(16), child: child),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: child,
+      ),
     );
   }
 
@@ -101,15 +98,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Profile")),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(20),
-
               child: Column(
                 children: [
-                  /// PROFILE PHOTO
+                  /// PROFILE ICON
                   box(
                     const Center(
                       child: CircleAvatar(
@@ -126,19 +121,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 15),
 
-                  /// NAME
+                  /// PHONE
                   box(
                     Row(
                       children: [
-                        const Icon(Icons.person),
+                        const Icon(Icons.phone),
                         const SizedBox(width: 10),
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        Text(phone),
                       ],
                     ),
                   ),
@@ -158,38 +147,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 10),
 
-                  /// PHONE
+                  /// USER ID
                   box(
                     Row(
                       children: [
-                        const Icon(Icons.phone),
+                        const Icon(Icons.fingerprint),
                         const SizedBox(width: 10),
-                        Text(phone.isEmpty ? "Not provided" : phone),
+                        Expanded(child: Text(uid)),
                       ],
                     ),
                   ),
 
                   const Spacer(),
 
-                  /// LOGOUT BUTTON
+                  /// LOGOUT
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: logout,
                       icon: const Icon(Icons.logout),
                       label: const Text("Logout"),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.all(14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
                     ),
                   ),
 
                   const SizedBox(height: 10),
 
-                  /// DELETE ACCOUNT BUTTON
+                  /// DELETE ACCOUNT
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -198,17 +181,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: const Text("Delete Account"),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
-                        padding: const EdgeInsets.all(14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 15),
 
-                  /// FOOTER
                   const Text(
                     "Built by Karan",
                     style: TextStyle(

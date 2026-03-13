@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'otp_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -15,55 +15,45 @@ class _SignupScreenState extends State<SignupScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool hidePassword = true;
-  bool loading = false;
-
   final formKey = GlobalKey<FormState>();
 
-  Future signup() async {
+  bool loading = false;
+  bool hidePassword = true;
+
+  Future sendOtp() async {
     if (!formKey.currentState!.validate()) return;
 
-    try {
-      setState(() {
-        loading = true;
-      });
+    setState(() => loading = true);
 
-      final result = await ApiService.signup(
-        nameController.text.trim(),
-        emailController.text.trim(),
-        phoneController.text.trim(),
-        passwordController.text.trim(),
-      );
+    String phone = "+91${phoneController.text.trim()}";
 
-      setState(() {
-        loading = false;
-      });
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: phone,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() => loading = false);
 
-      if (result["message"] != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "OTP Failed")),
+        );
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        setState(() => loading = false);
+
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => OtpScreen(
-              email: emailController.text.trim(),
+              verificationId: verificationId,
+              phone: phone,
             ),
           ),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result["error"] ?? "Signup failed"),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() {
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Server error: $e")),
-      );
-    }
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
   }
 
   @override
@@ -107,7 +97,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
                 validator: (value) {
-                  if (value == null || value.length < 10) {
+                  if (value == null || value.length != 10) {
                     return "Enter valid phone number";
                   }
                   return null;
@@ -124,14 +114,8 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Enter email";
-                  }
-                  return null;
-                },
                 decoration: const InputDecoration(
-                  labelText: "Email",
+                  labelText: "Email (optional)",
                   prefixIcon: Icon(Icons.email),
                 ),
               ),
@@ -164,15 +148,15 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 30),
 
-              /// BUTTON
+              /// SEND OTP BUTTON
               loading
                   ? const CircularProgressIndicator()
                   : SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: signup,
+                        onPressed: sendOtp,
                         child: const Text("Send OTP"),
                       ),
                     ),

@@ -1,88 +1,108 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'otp_screen.dart';
+import 'login_screen.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final emailController = TextEditingController();
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  final passwordController = TextEditingController();
+  final confirmController = TextEditingController();
+
+  bool hidePassword = true;
+  bool hideConfirm = true;
+
   bool loading = false;
 
-  Future<void> sendOtp() async {
-    final email = emailController.text.trim();
-
-    if (email.isEmpty) {
+  Future resetPassword() async {
+    if (passwordController.text != confirmController.text) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("Enter email")));
+      ).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
+
       return;
     }
 
-    setState(() {
-      loading = true;
-    });
+    setState(() => loading = true);
 
-    try {
-      await ApiService.sendOtp(email);
+    final result = await ApiService.forgotPassword(
+      widget.email,
+      passwordController.text,
+    );
 
+    setState(() => loading = false);
+
+    if (result["message"] != null) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text("OTP sent to email")));
+      ).showSnackBar(const SnackBar(content: Text("Password updated")));
 
-      Navigator.push(
+      Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(email: email, fromForgotPassword: true),
-        ),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
       );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
-
-    setState(() {
-      loading = false;
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Forgot Password")),
-
+      appBar: AppBar(title: const Text("Reset Password")),
       body: Padding(
-        padding: const EdgeInsets.all(20),
-
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
             TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-
-              decoration: const InputDecoration(
-                labelText: "Enter Email",
-                prefixIcon: Icon(Icons.email),
+              controller: passwordController,
+              obscureText: hidePassword,
+              decoration: InputDecoration(
+                labelText: "New Password",
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    hidePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      hidePassword = !hidePassword;
+                    });
+                  },
+                ),
               ),
             ),
-
-            const SizedBox(height: 25),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: loading ? null : sendOtp,
-
-                child: loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Send OTP"),
+            const SizedBox(height: 20),
+            TextField(
+              controller: confirmController,
+              obscureText: hideConfirm,
+              decoration: InputDecoration(
+                labelText: "Confirm Password",
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    hideConfirm ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      hideConfirm = !hideConfirm;
+                    });
+                  },
+                ),
               ),
             ),
+            const SizedBox(height: 30),
+            loading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: resetPassword,
+                    child: const Text("Reset Password"),
+                  ),
           ],
         ),
       ),

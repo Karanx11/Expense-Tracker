@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_screen.dart';
-import 'forgot_password_screen.dart';
-import 'main_screen.dart';
+import 'otp_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,38 +11,52 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final phoneController = TextEditingController();
 
-  bool hidePassword = true;
   bool loading = false;
 
   final formKey = GlobalKey<FormState>();
 
-  Future login() async {
+  Future sendOtp() async {
     if (!formKey.currentState!.validate()) return;
 
     setState(() => loading = true);
 
-    final result = await ApiService.login(
-      emailController.text.trim(),
-      passwordController.text.trim(),
+    String phone = "+91${phoneController.text.trim()}";
+
+    await FirebaseAuth.instance.verifyPhoneNumber(
+      phoneNumber: phone,
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        await FirebaseAuth.instance.signInWithCredential(credential);
+      },
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() => loading = false);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? "OTP Failed")),
+        );
+      },
+      codeSent: (String verificationId, int? resendToken) {
+        setState(() => loading = false);
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              verificationId: verificationId,
+              phone: phone,
+            ),
+          ),
+        );
+      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
     );
+  }
 
-    setState(() => loading = false);
-
-    if (result["token"] != null) {
-      /// SAVE TOKEN
-      await ApiService.saveToken(result["token"]);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result["message"] ?? "Login failed")),
-      );
-    }
+  @override
+  void dispose() {
+    phoneController.dispose();
+    super.dispose();
   }
 
   @override
@@ -52,101 +65,52 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-
           child: Form(
             key: formKey,
-
             child: Column(
               children: [
                 const Text(
                   "Expense Tracker",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-
                 const SizedBox(height: 40),
-
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
-
                     child: Column(
                       children: [
-                        /// EMAIL
+                        /// PHONE NUMBER
                         TextFormField(
-                          controller: emailController,
-
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
                           validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Enter email";
+                            if (value == null || value.length != 10) {
+                              return "Enter valid phone number";
                             }
                             return null;
                           },
-
                           decoration: const InputDecoration(
-                            labelText: "Email",
-                            prefixIcon: Icon(Icons.email),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        /// PASSWORD
-                        TextFormField(
-                          controller: passwordController,
-                          obscureText: hidePassword,
-
-                          validator: (value) {
-                            if (value == null || value.length < 6) {
-                              return "Password must be 6 characters";
-                            }
-                            return null;
-                          },
-
-                          decoration: InputDecoration(
-                            labelText: "Password",
-                            prefixIcon: const Icon(Icons.lock),
-
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                hidePassword
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  hidePassword = !hidePassword;
-                                });
-                              },
-                            ),
+                            labelText: "Phone Number",
+                            prefixIcon: Icon(Icons.phone),
                           ),
                         ),
 
                         const SizedBox(height: 25),
 
-                        /// LOGIN BUTTON
+                        /// SEND OTP BUTTON
                         loading
                             ? const CircularProgressIndicator()
                             : ElevatedButton(
-                                onPressed: login,
-                                child: const Text("Login"),
+                                onPressed: sendOtp,
+                                child: const Text("Send OTP"),
                               ),
 
                         const SizedBox(height: 10),
 
-                        /// FORGOT PASSWORD
-                        TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ForgotPasswordScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text("Forgot Password?"),
-                        ),
-
-                        /// SIGNUP
+                        /// CREATE ACCOUNT
                         TextButton(
                           onPressed: () {
                             Navigator.push(

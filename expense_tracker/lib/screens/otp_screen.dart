@@ -1,16 +1,15 @@
-import 'package:expense_tracker/screens/main_screen.dart';
 import 'package:flutter/material.dart';
-import '../services/api_service.dart';
-import 'reset_password_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'main_screen.dart';
 
 class OtpScreen extends StatefulWidget {
-  final String email;
-  final bool fromForgotPassword;
+  final String verificationId;
+  final String phone;
 
   const OtpScreen({
     super.key,
-    required this.email,
-    this.fromForgotPassword = false,
+    required this.verificationId,
+    required this.phone,
   });
 
   @override
@@ -31,56 +30,39 @@ class _OtpScreenState extends State<OtpScreen> {
     String otp = getOtp();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Enter valid OTP")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter valid OTP")),
+      );
       return;
     }
 
     try {
-      setState(() {
-        loading = true;
-      });
+      setState(() => loading = true);
 
-      final result = await ApiService.verifyOtp(widget.email, otp);
+      PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: otp,
+      );
 
-      setState(() {
-        loading = false;
-      });
+      await FirebaseAuth.instance.signInWithCredential(credential);
 
-      if (result["message"] == "OTP verified") {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("OTP Verified")));
+      setState(() => loading = false);
 
-        /// Forgot Password Flow
-        if (widget.fromForgotPassword) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ResetPasswordScreen(email: widget.email),
-            ),
-          );
-        }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("OTP Verified")),
+      );
 
-        /// Signup Flow
-        else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const MainScreen()),
-            (route) => false,
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result["message"] ?? "Invalid OTP")),
-        );
-      }
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScreen()),
+        (route) => false,
+      );
     } catch (e) {
-      setState(() {
-        loading = false;
-      });
+      setState(() => loading = false);
 
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Invalid OTP")),
+      );
     }
   }
 
@@ -105,16 +87,12 @@ class _OtpScreenState extends State<OtpScreen> {
     );
   }
 
-  Future resendOtp() async {
-    try {
-      await ApiService.sendOtp(widget.email);
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("OTP resent")));
-    } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Error: $e")));
+  @override
+  void dispose() {
+    for (var c in controllers) {
+      c.dispose();
     }
+    super.dispose();
   }
 
   @override
@@ -126,9 +104,9 @@ class _OtpScreenState extends State<OtpScreen> {
         child: Column(
           children: [
             const SizedBox(height: 40),
-            const Text(
-              "Enter the OTP sent to your email",
-              style: TextStyle(fontSize: 18),
+            Text(
+              "Enter OTP sent to ${widget.phone}",
+              style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 30),
             Row(
@@ -142,11 +120,6 @@ class _OtpScreenState extends State<OtpScreen> {
                     onPressed: verifyOtp,
                     child: const Text("Verify OTP"),
                   ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: resendOtp,
-              child: const Text("Resend OTP"),
-            ),
           ],
         ),
       ),
