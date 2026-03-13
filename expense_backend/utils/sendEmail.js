@@ -5,11 +5,14 @@ const sendEmail = async (email, otp) => {
 
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
+      port: 465,
+      secure: true,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
@@ -25,7 +28,7 @@ const sendEmail = async (email, otp) => {
     console.log("Email sent:", info.response);
 
   } catch (error) {
-    console.error("Email sending error:", error);
+    console.error("Email error:", error);
   }
 };
 
