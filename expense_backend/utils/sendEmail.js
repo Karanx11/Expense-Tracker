@@ -1,19 +1,29 @@
-const { Resend } = require("resend");
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, otp) => {
   try {
 
-    await resend.emails.send({
-      from: "Expense Tracker <onboarding@resend.dev>",
-      to: email,
-      subject: "Your OTP Code",
-      html: `<h2>Your OTP is ${otp}</h2>
-             <p>This OTP expires in 5 minutes.</p>`,
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
 
-    console.log("Email sent successfully");
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "OTP Verification",
+      html: `
+        <h2>Your OTP is: ${otp}</h2>
+        <p>This OTP is valid for 5 minutes.</p>
+      `,
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+
+    console.log("Email sent:", info.response);
 
   } catch (error) {
     console.error("Email error:", error);
