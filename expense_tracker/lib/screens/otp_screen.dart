@@ -18,10 +18,8 @@ class OtpScreen extends StatefulWidget {
 }
 
 class _OtpScreenState extends State<OtpScreen> {
-  final List<TextEditingController> controllers = List.generate(
-    6,
-    (_) => TextEditingController(),
-  );
+  final List<TextEditingController> controllers =
+      List.generate(6, (_) => TextEditingController());
 
   bool loading = false;
 
@@ -33,115 +31,120 @@ class _OtpScreenState extends State<OtpScreen> {
     String otp = getOtp();
 
     if (otp.length != 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Enter valid OTP")));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("Enter valid OTP")));
       return;
     }
 
-    setState(() => loading = true);
+    try {
+      setState(() {
+        loading = true;
+      });
 
-    final result = await ApiService.verifyOtp(widget.email, otp);
+      final result = await ApiService.verifyOtp(widget.email, otp);
 
-    setState(() => loading = false);
+      setState(() {
+        loading = false;
+      });
 
-    if (result["message"] == "OTP verified") {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("OTP Verified")));
+      if (result["message"] == "OTP verified") {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text("OTP Verified")));
 
-      /// FORGOT PASSWORD FLOW
-      if (widget.fromForgotPassword) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ResetPasswordScreen(email: widget.email),
-          ),
+        /// Forgot Password Flow
+        if (widget.fromForgotPassword) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ResetPasswordScreen(email: widget.email),
+            ),
+          );
+        }
+
+        /// Signup Flow
+        else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+            (route) => false,
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result["message"] ?? "Invalid OTP")),
         );
       }
-      /// SIGNUP FLOW
-      else {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-          (route) => false,
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result["message"] ?? "Invalid OTP")),
-      );
+    } catch (e) {
+      setState(() {
+        loading = false;
+      });
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 
   Widget otpBox(int index) {
     return SizedBox(
       width: 45,
-
       child: TextField(
         controller: controllers[index],
         keyboardType: TextInputType.number,
         textAlign: TextAlign.center,
         maxLength: 1,
-
         decoration: const InputDecoration(counterText: ""),
-
         onChanged: (value) {
           if (value.isNotEmpty && index < 5) {
             FocusScope.of(context).nextFocus();
           }
-
-          if (value.isNotEmpty && index == 5) {
-            FocusScope.of(context).unfocus();
+          if (value.isEmpty && index > 0) {
+            FocusScope.of(context).previousFocus();
           }
         },
       ),
     );
   }
 
+  Future resendOtp() async {
+    try {
+      await ApiService.sendOtp(widget.email);
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("OTP resent")));
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Error: $e")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Verify OTP")),
-
       body: Padding(
         padding: const EdgeInsets.all(24),
-
         child: Column(
           children: [
             const SizedBox(height: 40),
-
             const Text(
               "Enter the OTP sent to your email",
               style: TextStyle(fontSize: 18),
             ),
-
             const SizedBox(height: 30),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(6, (index) => otpBox(index)),
             ),
-
             const SizedBox(height: 30),
-
             loading
                 ? const CircularProgressIndicator()
                 : ElevatedButton(
                     onPressed: verifyOtp,
                     child: const Text("Verify OTP"),
                   ),
-
             const SizedBox(height: 10),
-
             TextButton(
-              onPressed: () async {
-                await ApiService.sendOtp(widget.email);
-
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("OTP resent")));
-              },
+              onPressed: resendOtp,
               child: const Text("Resend OTP"),
             ),
           ],

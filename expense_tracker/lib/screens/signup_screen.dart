@@ -23,44 +23,69 @@ class _SignupScreenState extends State<SignupScreen> {
   Future signup() async {
     if (!formKey.currentState!.validate()) return;
 
-    setState(() => loading = true);
+    try {
+      setState(() {
+        loading = true;
+      });
 
-    final result = await ApiService.signup(
-      nameController.text.trim(),
-      emailController.text.trim(),
-      phoneController.text.trim(),
-      passwordController.text.trim(),
-    );
-
-    setState(() => loading = false);
-
-    if (result["message"] != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(email: emailController.text),
-        ),
+      final result = await ApiService.signup(
+        nameController.text.trim(),
+        emailController.text.trim(),
+        phoneController.text.trim(),
+        passwordController.text.trim(),
       );
-    } else {
+
+      setState(() {
+        loading = false;
+      });
+
+      if (result["message"] != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OtpScreen(
+              email: emailController.text.trim(),
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result["error"] ?? "Signup failed"),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        loading = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result["message"] ?? "Signup failed")),
+        SnackBar(content: Text("Server error: $e")),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Create Account")),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-
         child: Form(
           key: formKey,
-
           child: Column(
             children: [
+              /// NAME
               TextFormField(
                 controller: nameController,
                 validator: (value) {
@@ -77,11 +102,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 15),
 
+              /// PHONE
               TextFormField(
                 controller: phoneController,
+                keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value == null || value.length < 10) {
-                    return "Enter valid phone";
+                    return "Enter valid phone number";
                   }
                   return null;
                 },
@@ -93,8 +120,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 15),
 
+              /// EMAIL
               TextFormField(
                 controller: emailController,
+                keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return "Enter email";
@@ -109,19 +138,19 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 15),
 
+              /// PASSWORD
               TextFormField(
                 controller: passwordController,
                 obscureText: hidePassword,
                 validator: (value) {
                   if (value == null || value.length < 6) {
-                    return "Password must be 6 characters";
+                    return "Password must be at least 6 characters";
                   }
                   return null;
                 },
                 decoration: InputDecoration(
                   labelText: "Password",
                   prefixIcon: const Icon(Icons.lock),
-
                   suffixIcon: IconButton(
                     icon: Icon(
                       hidePassword ? Icons.visibility : Icons.visibility_off,
@@ -137,11 +166,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 25),
 
+              /// BUTTON
               loading
                   ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: signup,
-                      child: const Text("Send OTP"),
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: signup,
+                        child: const Text("Send OTP"),
+                      ),
                     ),
             ],
           ),

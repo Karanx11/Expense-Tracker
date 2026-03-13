@@ -3,6 +3,7 @@ import '../models/expense.dart';
 import '../services/api_service.dart';
 import '../services/sms_service.dart';
 import '../services/socket_service.dart';
+import '../services/notification_listener_service.dart';
 import '../utils/sms_parser.dart';
 import '../services/notification_service.dart';
 import 'history_screen.dart';
@@ -49,9 +50,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
       loadExpenses();
     });
 
-    /// CHECK SMS EVERY 15 SEC
+    /// SMS CHECK
     smsTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       fetchSmsExpenses();
+    });
+
+    /// NOTIFICATION LISTENER
+    NotificationListenerService.startListening((text) async {
+      print("Payment notification: $text");
+
+      final transaction = parseTransaction(text);
+
+      if (transaction != null) {
+        await ApiService.addExpense(
+          transaction["amount"],
+          transaction["category"],
+          transaction["paymentType"],
+          transaction["note"],
+          DateTime.now().toIso8601String(),
+        );
+
+        await loadExpenses();
+
+        double remaining = monthlyLimit - totalSpent;
+
+        await NotificationService.showExpenseNotification(
+          transaction["amount"],
+          remaining,
+        );
+
+        if (totalSpent > monthlyLimit) {
+          await NotificationService.showLimitWarning();
+        }
+      }
     });
   }
 
@@ -74,7 +105,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// SAVE BUDGET
   Future<void> saveBudget(double value) async {
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.setDouble("monthlyLimit", value);
   }
 
@@ -139,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// AUTO SMS DETECTION
+  /// SMS DETECTION
   Future<void> fetchSmsExpenses() async {
     try {
       final messages = await smsService.getMessages();
@@ -165,11 +195,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             double remaining = monthlyLimit - totalSpent;
 
-            /// SHOW EXPENSE NOTIFICATION
             await NotificationService.showExpenseNotification(
                 transaction["amount"], remaining);
 
-            /// LIMIT WARNING
             if (totalSpent > monthlyLimit) {
               await NotificationService.showLimitWarning();
             }
@@ -199,9 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           actions: [
             TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 child: const Text("Cancel")),
             ElevatedButton(
               onPressed: () async {
@@ -240,19 +266,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${top.key} ₹${top.value.toStringAsFixed(0)}";
   }
 
-  /// PROGRESS BAR COLOR
   Color getBudgetColor(double progress) {
-    if (progress < 0.4) {
-      return Colors.green;
-    }
-
-    if (progress < 0.7) {
-      return Colors.blue;
-    }
-
-    if (progress < 0.9) {
-      return Colors.orange;
-    }
+    if (progress < 0.4) return Colors.green;
+    if (progress < 0.7) return Colors.blue;
+    if (progress < 0.9) return Colors.orange;
 
     return Colors.red;
   }
@@ -287,18 +304,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Total Spent",
-                            style: TextStyle(color: Colors.white70),
-                          ),
+                          const Text("Total Spent",
+                              style: TextStyle(color: Colors.white70)),
                           const SizedBox(height: 8),
-                          Text(
-                            "₹$totalSpent",
-                            style: const TextStyle(
-                              fontSize: 34,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text("₹$totalSpent",
+                              style: const TextStyle(
+                                  fontSize: 34, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -310,34 +321,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.money),
-                                  const SizedBox(height: 6),
-                                  const Text("Cash"),
-                                  const SizedBox(height: 6),
-                                  Text("₹$cashTotal"),
-                                ],
-                              ),
+                            child: ListTile(
+                              leading: const Icon(Icons.money),
+                              title: const Text("Cash"),
+                              trailing: Text("₹$cashTotal"),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Card(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 18),
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.credit_card),
-                                  const SizedBox(height: 6),
-                                  const Text("Online"),
-                                  const SizedBox(height: 6),
-                                  Text("₹$onlineTotal"),
-                                ],
-                              ),
+                            child: ListTile(
+                              leading: const Icon(Icons.credit_card),
+                              title: const Text("Online"),
+                              trailing: Text("₹$onlineTotal"),
                             ),
                           ),
                         ),
@@ -387,11 +384,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 20),
 
                     /// RECENT
-                    const Text(
-                      "Recent Transactions",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
+                    const Text("Recent Transactions",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
 
                     const SizedBox(height: 10),
 

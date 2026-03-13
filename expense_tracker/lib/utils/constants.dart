@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = "http://10.30.227.31:5000/api";
+  static const String baseUrl = "https://expense-backend-sz71.onrender.com/api";
 
   static const String signup = "$baseUrl/auth/signup";
   static const String login = "$baseUrl/auth/login";

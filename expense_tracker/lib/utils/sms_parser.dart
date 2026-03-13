@@ -1,41 +1,37 @@
 Map<String, dynamic>? parseTransaction(String sms) {
-  RegExp amountRegex = RegExp(r'Rs\.?\s?(\d+)');
-  final amountMatch = amountRegex.firstMatch(sms);
+  sms = sms.toLowerCase();
 
-  if (amountMatch == null) return null;
+  /// detect debit transactions
+  if (!(sms.contains("debited") ||
+      sms.contains("spent") ||
+      sms.contains("paid"))) {
+    return null;
+  }
 
-  double amount = double.parse(amountMatch.group(1)!);
+  /// detect amount (supports INR 1.00, Rs 120, ₹350)
+  RegExp amountRegex = RegExp(r'(₹|rs\.?|inr)\s?(\d+(\.\d+)?)');
 
-  String merchant = "Unknown";
+  var match = amountRegex.firstMatch(sms);
+
+  if (match == null) return null;
+
+  double amount = double.parse(match.group(2)!);
+
+  /// category detection
   String category = "Other";
 
-  String text = sms.toLowerCase();
-
-  if (text.contains("amazon")) {
-    merchant = "Amazon";
-    category = "Shopping";
-  } else if (text.contains("zomato") || text.contains("swiggy")) {
-    merchant = "Food App";
+  if (sms.contains("swiggy") || sms.contains("zomato")) {
     category = "Food";
-  } else if (text.contains("uber") || text.contains("ola")) {
-    merchant = "Transport";
-    category = "Travel";
-  } else if (text.contains("netflix") || text.contains("spotify")) {
-    merchant = "Subscription";
-    category = "Entertainment";
-  } else if (text.contains("flipkart")) {
-    merchant = "Flipkart";
+  } else if (sms.contains("amazon") || sms.contains("flipkart")) {
     category = "Shopping";
+  } else if (sms.contains("uber") || sms.contains("ola")) {
+    category = "Travel";
   }
 
-  if (text.contains("debited") || text.contains("spent")) {
-    return {
-      "amount": amount,
-      "category": category,
-      "paymentType": "Online",
-      "note": merchant,
-    };
-  }
-
-  return null;
+  return {
+    "amount": amount,
+    "category": category,
+    "paymentType": "Online",
+    "note": "UPI Payment"
+  };
 }

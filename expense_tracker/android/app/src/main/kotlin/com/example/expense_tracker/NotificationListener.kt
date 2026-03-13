@@ -3,8 +3,13 @@ package com.example.expense_tracker
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import io.flutter.plugin.common.MethodChannel
 
 class NotificationListener : NotificationListenerService() {
+
+    companion object {
+        var channel: MethodChannel? = null
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
 
@@ -14,16 +19,15 @@ class NotificationListener : NotificationListenerService() {
         val title = extras.getString("android.title")
         val text = extras.getCharSequence("android.text")?.toString()
 
-        Log.d("PAYMENT_NOTIFICATION", "$packageName : $text")
+        Log.d("NOTIFICATION", "$packageName -> $text")
 
-        if (text != null) {
+        if(text == null) return
 
-            if (text.contains("paid") ||
-                text.contains("debited") ||
-                text.contains("UPI")) {
+        if(packageName.contains("paisa") ||
+           packageName.contains("phonepe") ||
+           packageName.contains("paytm")) {
 
-                Log.d("PAYMENT_DETECTED", text)
-            }
+            channel?.invokeMethod("paymentNotification", text)
         }
     }
 }
