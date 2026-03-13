@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+const nodemailer = require("nodemailer");
 
 const sendEmail = async ({ to, subject, html }) => {
 
@@ -12,7 +12,7 @@ const sendEmail = async ({ to, subject, html }) => {
       pass: process.env.EMAIL_PASS
     },
 
-    family: 4 // force IPv4 instead of IPv6
+    family: 4 // force IPv4 (fixes Render Gmail issue)
   });
 
   await transporter.sendMail({
@@ -21,6 +21,7 @@ const sendEmail = async ({ to, subject, html }) => {
     subject,
     html
   });
+
 };
 
-export default sendEmail;
+module.exports = sendEmail;
