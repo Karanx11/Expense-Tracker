@@ -7,6 +7,8 @@ import '../utils/sms_parser.dart';
 import '../services/notification_service.dart';
 import 'history_screen.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -31,12 +33,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final SmsService smsService = SmsService();
   final SocketService socketService = SocketService();
 
-  bool smsChecked = false;
+  Timer? smsTimer;
 
   @override
   void initState() {
     super.initState();
 
+    loadBudget();
     checkMonthlyReset();
     loadExpenses();
 
@@ -45,15 +48,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
     socketService.listenExpense((data) {
       loadExpenses();
     });
+
+    /// CHECK SMS EVERY 15 SEC
+    smsTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
+      fetchSmsExpenses();
+    });
   }
 
   @override
   void dispose() {
     socketService.socket.dispose();
+    smsTimer?.cancel();
     super.dispose();
   }
 
-  /// RESET BUDGET IF NEW MONTH
+  /// LOAD BUDGET
+  Future<void> loadBudget() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      monthlyLimit = prefs.getDouble("monthlyLimit") ?? 10000;
+    });
+  }
+
+  /// SAVE BUDGET
+  Future<void> saveBudget(double value) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setDouble("monthlyLimit", value);
+  }
+
+  /// RESET MONTHLY
   void checkMonthlyReset() {
     DateTime now = DateTime.now();
 
@@ -70,7 +95,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// FETCH EXPENSES
+  /// LOAD EXPENSES
   Future<void> loadExpenses() async {
     try {
       final data = await ApiService.getExpenses();
@@ -78,11 +103,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       expenses = data.map<Expense>((e) => Expense.fromJson(e)).toList();
 
       calculateTotals();
-
-      if (!smsChecked) {
-        fetchSmsExpenses();
-        smsChecked = true;
-      }
 
       if (mounted) {
         setState(() {
@@ -119,7 +139,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  /// AUTO SMS EXPENSE DETECTION
+  /// AUTO SMS DETECTION
   Future<void> fetchSmsExpenses() async {
     try {
       final messages = await smsService.getMessages();
@@ -128,11 +148,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final transaction = parseTransaction(sms.body ?? "");
 
         if (transaction != null) {
-          bool exists = expenses.any(
-            (e) =>
-                e.amount == transaction["amount"] &&
-                e.note == transaction["note"],
-          );
+          bool exists = expenses.any((e) =>
+              e.amount == transaction["amount"] &&
+              e.note == transaction["note"]);
 
           if (!exists) {
             await ApiService.addExpense(
@@ -147,11 +165,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
             double remaining = monthlyLimit - totalSpent;
 
+            /// SHOW EXPENSE NOTIFICATION
             await NotificationService.showExpenseNotification(
-              transaction["amount"],
-              remaining,
-            );
+                transaction["amount"], remaining);
 
+            /// LIMIT WARNING
             if (totalSpent > monthlyLimit) {
               await NotificationService.showLimitWarning();
             }
@@ -161,11 +179,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
       }
     } catch (e) {
-      print("SMS Parsing Error: $e");
+      print("SMS Error: $e");
     }
   }
 
-  /// SET MONTHLY LIMIT
+  /// SET BUDGET
   void setLimit() {
     TextEditingController controller = TextEditingController();
 
@@ -181,19 +199,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           actions: [
             TextButton(
-              child: const Text("Cancel"),
-              onPressed: () => Navigator.pop(context),
-            ),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("Cancel")),
             ElevatedButton(
-              child: const Text("Save"),
-              onPressed: () {
+              onPressed: () async {
                 if (controller.text.isNotEmpty) {
+                  double value = double.parse(controller.text);
+
                   setState(() {
-                    monthlyLimit = double.parse(controller.text);
+                    monthlyLimit = value;
                   });
+
+                  await saveBudget(value);
                 }
+
                 Navigator.pop(context);
               },
+              child: const Text("Save"),
             ),
           ],
         );
@@ -216,30 +240,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${top.key} ₹${top.value.toStringAsFixed(0)}";
   }
 
-  /// BUDGET BAR COLOR
+  /// PROGRESS BAR COLOR
   Color getBudgetColor(double progress) {
     if (progress < 0.4) {
       return Colors.green;
-    } else if (progress < 0.7) {
-      return Colors.blue;
-    } else if (progress < 0.9) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
     }
+
+    if (progress < 0.7) {
+      return Colors.blue;
+    }
+
+    if (progress < 0.9) {
+      return Colors.orange;
+    }
+
+    return Colors.red;
   }
 
   @override
   Widget build(BuildContext context) {
     double remaining = monthlyLimit - totalSpent;
 
-    double progress = monthlyLimit == 0
-        ? 0
-        : (totalSpent / monthlyLimit).clamp(0, 1);
+    double progress =
+        monthlyLimit == 0 ? 0 : (totalSpent / monthlyLimit).clamp(0, 1);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Dashboard")),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -247,11 +273,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(16),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    /// TOTAL SPENT CARD
+                    /// TOTAL SPENT
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -293,21 +318,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(height: 6),
                                   const Text("Cash"),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    "₹$cashTotal",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
+                                  Text("₹$cashTotal"),
                                 ],
                               ),
                             ),
                           ),
                         ),
-
                         const SizedBox(width: 10),
-
                         Expanded(
                           child: Card(
                             child: Padding(
@@ -318,13 +335,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(height: 6),
                                   const Text("Online"),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    "₹$onlineTotal",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                    ),
-                                  ),
+                                  Text("₹$onlineTotal"),
                                 ],
                               ),
                             ),
@@ -335,21 +346,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// MONTHLY BUDGET
-                    const Text(
-                      "Monthly Budget",
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    /// BUDGET
+                    const Text("Monthly Budget"),
 
                     const SizedBox(height: 10),
 
                     LinearProgressIndicator(
                       value: progress,
                       minHeight: 10,
-                      backgroundColor: Colors.grey.shade300,
-                      valueColor: AlwaysStoppedAnimation(
-                        getBudgetColor(progress),
-                      ),
+                      valueColor:
+                          AlwaysStoppedAnimation(getBudgetColor(progress)),
                     ),
 
                     const SizedBox(height: 8),
@@ -380,13 +386,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// RECENT TRANSACTIONS
+                    /// RECENT
                     const Text(
                       "Recent Transactions",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
 
                     const SizedBox(height: 10),
@@ -406,25 +410,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(e.category),
-                                const SizedBox(height: 3),
                                 Text(
-                                  DateFormat(
-                                    "dd MMM yyyy • HH:mm",
-                                  ).format(e.date),
+                                  DateFormat("dd MMM yyyy • HH:mm")
+                                      .format(e.date),
                                   style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
+                                      fontSize: 12, color: Colors.grey),
                                 ),
                               ],
                             ),
-                            trailing: Text(
-                              "₹${e.amount}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
+                            trailing: Text("₹${e.amount}"),
                           ),
                         );
                       }).toList(),
@@ -432,7 +426,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// VIEW ALL
                     Center(
                       child: TextButton(
                         child: const Text("View All Transactions"),
