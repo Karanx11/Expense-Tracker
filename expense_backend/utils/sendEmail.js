@@ -1,11 +1,12 @@
 const nodemailer = require("nodemailer");
 
 const sendEmail = async (email, otp) => {
-
   try {
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -13,14 +14,10 @@ const sendEmail = async (email, otp) => {
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"Expense Tracker" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Expense Tracker OTP",
-      html: `
-        <h2>Your OTP Code</h2>
-        <h1>${otp}</h1>
-        <p>This OTP is valid for 5 minutes.</p>
-      `
+      subject: "Expense Tracker OTP Verification",
+      text: `Your OTP is: ${otp}`
     };
 
     const info = await transporter.sendMail(mailOptions);
@@ -28,11 +25,8 @@ const sendEmail = async (email, otp) => {
     console.log("Email sent:", info.response);
 
   } catch (error) {
-
-    console.log("Email sending error:", error);
-
+    console.error("Email sending error:", error);
   }
-
 };
 
 module.exports = sendEmail;
