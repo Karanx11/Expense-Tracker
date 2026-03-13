@@ -1,29 +1,22 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const sendEmail = async ({ to, subject, html }) => {
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+const sendEmail = async (email, otp) => {
   try {
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"Expense Tracker" <${process.env.SMTP_USER}>`,
-      to,
-      subject,
-      html,
+    await resend.emails.send({
+      from: "Expense Tracker <onboarding@resend.dev>",
+      to: email,
+      subject: "Your OTP Code",
+      html: `<h2>Your OTP is ${otp}</h2>
+             <p>This OTP expires in 5 minutes.</p>`,
     });
 
     console.log("Email sent successfully");
 
   } catch (error) {
-    console.log("Email error:", error);
+    console.error("Email error:", error);
   }
 };
 
