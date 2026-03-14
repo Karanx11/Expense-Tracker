@@ -1,7 +1,7 @@
+import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/expense.dart';
-import '../services/api_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   final List<Expense> expenses;
@@ -92,95 +92,95 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Expense History")),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : widget.expenses.isEmpty
-          ? const Center(
-              child: Text("No expenses yet", style: TextStyle(fontSize: 18)),
-            )
-          : ListView(
-              children: groupedExpenses.entries.map((entry) {
-                String month = entry.key;
-                List<Expense> expenses = entry.value;
+              ? const Center(
+                  child:
+                      Text("No expenses yet", style: TextStyle(fontSize: 18)),
+                )
+              : ListView(
+                  children: groupedExpenses.entries.map((entry) {
+                    String month = entry.key;
+                    List<Expense> expenses = entry.value;
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// MONTH HEADER
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(
-                        month,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-
-                    /// EXPENSE LIST
-                    ...expenses.map((e) {
-                      int index = widget.expenses.indexOf(e);
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
-                        ),
-                        child: ListTile(
-                          leading: Icon(
-                            e.paymentType == "Cash"
-                                ? Icons.money
-                                : Icons.credit_card,
-                            color: const Color(0xFF4F7C82),
-                          ),
-
-                          title: Text(e.category),
-
-                          /// NOTE + DATE TIME
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(e.note),
-                              const SizedBox(height: 4),
-                              Text(
-                                DateFormat(
-                                  "dd MMM yyyy • HH:mm",
-                                ).format(e.date),
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                "₹${e.amount}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () => confirmDelete(e.id, index),
-                              ),
-                            ],
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// MONTH HEADER
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Text(
+                            month,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      );
-                    }).toList(),
-                  ],
-                );
-              }).toList(),
-            ),
+
+                        /// EXPENSE LIST
+                        ...expenses.map((e) {
+                          int index = widget.expenses.indexOf(e);
+
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
+                            child: ListTile(
+                              leading: Icon(
+                                e.paymentType == "Cash"
+                                    ? Icons.money
+                                    : Icons.credit_card,
+                                color: const Color(0xFF4F7C82),
+                              ),
+
+                              title: Text(e.category),
+
+                              /// NOTE + DATE TIME
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(e.note),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    DateFormat(
+                                      "dd MMM yyyy • HH:mm",
+                                    ).format(e.date),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    "₹${e.amount}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () => confirmDelete(e.id, index),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  }).toList(),
+                ),
     );
   }
 }

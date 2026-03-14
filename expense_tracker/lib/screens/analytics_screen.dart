@@ -1,7 +1,7 @@
+import '../services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/expense.dart';
-import '../services/api_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -116,10 +116,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text("Expense Analytics")),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           children: [
             /// PIE CHART
@@ -158,8 +156,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     leading: CircleAvatar(
                       backgroundColor:
                           pieColors[categoryTotals.keys.toList().indexOf(
-                                entry.key,
-                              ) %
+                                    entry.key,
+                                  ) %
                               pieColors.length],
                     ),
                     title: Text(entry.key),
@@ -199,7 +197,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                         ),
                       ],
                     ),
-
                     Text(
                       "₹${calculateMonthlyTotal().toStringAsFixed(0)}",
                       style: const TextStyle(

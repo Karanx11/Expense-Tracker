@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'package:flutter/material.dart';
+
 import 'login_screen.dart';
 import 'main_screen.dart';
 
@@ -40,7 +41,6 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity,
-
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xFF4F7C82), Color(0xFF2C3E50)],
@@ -48,7 +48,6 @@ class _SplashScreenState extends State<SplashScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-
         child: Column(
           children: [
             /// MAIN CONTENT
@@ -68,9 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       color: Color(0xFF4F7C82),
                     ),
                   ),
-
                   const SizedBox(height: 25),
-
                   const Text(
                     "Expense Tracker",
                     style: TextStyle(
@@ -79,16 +76,12 @@ class _SplashScreenState extends State<SplashScreen> {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 6),
-
                   const Text(
                     "Track • Save • Manage",
                     style: TextStyle(fontSize: 14, color: Colors.white70),
                   ),
-
                   const SizedBox(height: 40),
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 60),
                     child: ClipRRect(
@@ -100,9 +93,7 @@ class _SplashScreenState extends State<SplashScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   const Text(
                     "Loading...",
                     style: TextStyle(color: Colors.white70),
