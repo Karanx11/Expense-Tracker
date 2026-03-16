@@ -141,7 +141,7 @@ The app can automatically detect transactions from SMS, calculate remaining budg
 ## ⚙️ Installation
 
 1️⃣ Clone Repository
-git clone https://github.com/yourusername/expense-tracker.git
+git clone [https://github.com/yourusername/expense-tracker.git](https://github.com/Karanx11/Expense-Tracker.git)
 
 ### 🖥 Backend Setup
 
