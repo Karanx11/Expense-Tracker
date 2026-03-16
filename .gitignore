@@ -1,0 +1,81 @@
+# ------------------------------
+
+# Node.js
+
+# ------------------------------
+
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+
+.env
+
+# Firebase service account
+
+firebase-service-account.json
+
+# Logs
+
+logs
+*.log
+
+# ------------------------------
+
+# Flutter / Dart
+
+# ------------------------------
+
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+build/
+.env
+firebase-service-account.json
+node_modules/
+build/
+# Android
+
+android/.gradle
+android/app/build
+
+# iOS
+
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+
+# MacOS
+
+macos/Flutter/Flutter.framework
+
+# Windows
+
+windows/flutter/ephemeral
+
+# Linux
+
+linux/flutter/ephemeral
+
+# Web
+
+build/web
+
+# ------------------------------
+
+# IDE / Editor
+
+# ------------------------------
+
+.vscode/
+.idea/
+*.iml
+
+# OS files
+
+.DS_Store
+Thumbs.db

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/glass_card.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -7,6 +8,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    String email = user?.email ?? "No Email";
+    String uid = user?.uid ?? "Unknown";
+
     return Scaffold(
       body: Container(
         padding: const EdgeInsets.all(20),
@@ -33,9 +39,13 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              const Text(
-                "Karan Sharma",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              /// USER EMAIL AS NAME
+              Text(
+                email,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
 
               const SizedBox(height: 30),
@@ -46,32 +56,38 @@ class ProfileScreen extends StatelessWidget {
 
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+
+                  children: [
                     Row(
                       children: [
-                        Icon(Icons.email),
-                        SizedBox(width: 10),
-                        Text("karan@email.com"),
+                        const Icon(Icons.email),
+                        const SizedBox(width: 10),
+                        Text(email),
                       ],
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                    Row(
+                    const Row(
                       children: [
-                        Icon(Icons.phone),
+                        Icon(Icons.verified_user),
                         SizedBox(width: 10),
-                        Text("+91 9876543210"),
+                        Text("Authenticated via Firebase"),
                       ],
                     ),
 
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
                     Row(
                       children: [
-                        Icon(Icons.person),
-                        SizedBox(width: 10),
-                        Text("User ID: 10234"),
+                        const Icon(Icons.person),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "User ID: $uid",
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -80,15 +96,19 @@ class ProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              /// LOGOUT BUTTON
+              /// LOGOUT
               GlassCard(
                 height: 70,
+
                 child: InkWell(
-                  onTap: () {
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+
                     ScaffoldMessenger.of(
                       context,
                     ).showSnackBar(const SnackBar(content: Text("Logged out")));
                   },
+
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -105,6 +125,7 @@ class ProfileScreen extends StatelessWidget {
               /// DELETE ACCOUNT
               GlassCard(
                 height: 70,
+
                 child: InkWell(
                   onTap: () {
                     showDialog(
@@ -112,8 +133,9 @@ class ProfileScreen extends StatelessWidget {
                       builder: (context) {
                         return AlertDialog(
                           title: const Text("Delete Account"),
+
                           content: const Text(
-                            "Are you sure you want to delete your account?",
+                            "This will permanently delete your Firebase account.",
                           ),
 
                           actions: [
@@ -125,9 +147,19 @@ class ProfileScreen extends StatelessWidget {
                             ),
 
                             TextButton(
-                              onPressed: () {
-                                Navigator.pop(context);
+                              onPressed: () async {
+                                try {
+                                  await FirebaseAuth.instance.currentUser!
+                                      .delete();
+
+                                  Navigator.pop(context);
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.toString())),
+                                  );
+                                }
                               },
+
                               child: const Text(
                                 "Delete",
                                 style: TextStyle(color: Colors.red),

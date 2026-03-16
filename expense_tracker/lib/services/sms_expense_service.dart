@@ -1,28 +1,20 @@
-import '../models/expense.dart';
 import '../services/expense_service.dart';
 import '../utils/sms_parser.dart';
 
-void processSMS(String smsBody) {
-  // Parse SMS
+Future<void> processSMS(String smsBody) async {
+  /// Parse SMS
   ParsedSMS? parsed = parseBankSMS(smsBody);
 
-  // If SMS is OTP or not a transaction, ignore
+  /// Ignore OTP / non-transaction SMS
   if (parsed == null) {
     return;
   }
 
-  // If no amount detected, ignore
+  /// Ignore if amount missing
   if (parsed.amount == null) {
     return;
   }
 
-  Expense expense = Expense(
-    id: DateTime.now().toString(),
-    amount: parsed.amount!,
-    category: parsed.category,
-    note: "Auto SMS",
-    date: parsed.dateTime ?? DateTime.now(),
-  );
-
-  ExpenseService.addExpense(expense);
+  /// Send expense to backend
+  await ExpenseService.addExpense(parsed.amount!, parsed.category, "Auto SMS");
 }

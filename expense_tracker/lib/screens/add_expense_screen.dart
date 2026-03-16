@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/notification_service.dart';
 import '../services/expense_service.dart';
-import '../models/expense.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -15,47 +14,42 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final TextEditingController categoryController = TextEditingController();
   final TextEditingController noteController = TextEditingController();
 
-  double monthlyBudget = 10000;
+  bool isLoading = false;
 
-  void addExpense() {
+  Future<void> addExpense() async {
     double amount = double.tryParse(amountController.text) ?? 0;
+    String category = categoryController.text.trim();
+    String note = noteController.text.trim();
 
-    if (amount <= 0) {
+    if (amount <= 0 || category.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter valid amount & category")),
+      );
       return;
     }
 
-    final expense = Expense(
-      amount: amount,
-      category: categoryController.text,
-      note: noteController.text,
-      date: DateTime.now(),
-      id: '',
-    );
+    try {
+      setState(() {
+        isLoading = true;
+      });
 
-    ExpenseService.addExpense(expense);
+      await ExpenseService.addExpense(amount, category, note);
 
-    double totalSpent = 0;
-
-    for (var e in ExpenseService.getExpenses()) {
-      totalSpent += e.amount;
-    }
-
-    double remaining = monthlyBudget - totalSpent;
-
-    /// Notifications
-    if (remaining <= 0) {
-      NotificationService.showNotification(
-        "Budget Limit Exceeded",
-        "You have exceeded your monthly budget!",
-      );
-    } else {
       NotificationService.showNotification(
         "Expense Added",
-        "Remaining Budget: ₹$remaining",
+        "₹$amount added successfully",
       );
-    }
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed: $e")));
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -116,13 +110,22 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
               width: double.infinity,
 
               child: ElevatedButton(
-                onPressed: addExpense,
+                onPressed: isLoading ? null : addExpense,
 
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
 
-                child: const Text("Add Expense"),
+                child: isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text("Add Expense"),
               ),
             ),
           ],
