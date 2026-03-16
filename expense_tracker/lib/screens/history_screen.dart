@@ -1,186 +1,156 @@
-import '../services/api_service.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import '../services/expense_service.dart';
 import '../models/expense.dart';
+import '../widgets/transaction_card.dart';
+import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
-  final List<Expense> expenses;
-
-  const HistoryScreen({super.key, required this.expenses});
+  const HistoryScreen({super.key});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  bool loading = false;
-
-  /// DELETE EXPENSE
-  Future deleteExpense(String id, int index) async {
-    setState(() {
-      loading = true;
-    });
-
-    try {
-      await ApiService.deleteExpense(id);
-
-      setState(() {
-        widget.expenses.removeAt(index);
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Expense deleted")));
-    } catch (e) {
-      setState(() {
-        loading = false;
-      });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Delete failed")));
-    }
-  }
-
-  void confirmDelete(String id, int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Delete Expense"),
-          content: const Text("Are you sure you want to delete this expense?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.pop(context);
-                deleteExpense(id, index);
-              },
-              child: const Text("Delete"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// GROUP EXPENSES BY MONTH
-  Map<String, List<Expense>> groupByMonth(List<Expense> expenses) {
-    Map<String, List<Expense>> grouped = {};
-
-    for (var expense in expenses) {
-      String key = DateFormat("MMMM yyyy").format(expense.date);
-
-      if (!grouped.containsKey(key)) {
-        grouped[key] = [];
-      }
-
-      grouped[key]!.add(expense);
-    }
-
-    return grouped;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final groupedExpenses = groupByMonth(widget.expenses);
+    final List<Expense> expenses = ExpenseService.getExpenses();
+
+    /// GROUP BY MONTH
+    Map<String, List<Expense>> groupedByMonth = {};
+
+    for (var expense in expenses) {
+      String monthKey = DateFormat("MMMM yyyy").format(expense.date);
+
+      groupedByMonth.putIfAbsent(monthKey, () => []);
+
+      groupedByMonth[monthKey]!.add(expense);
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Expense History")),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : widget.expenses.isEmpty
-              ? const Center(
-                  child:
-                      Text("No expenses yet", style: TextStyle(fontSize: 18)),
-                )
-              : ListView(
-                  children: groupedExpenses.entries.map((entry) {
-                    String month = entry.key;
-                    List<Expense> expenses = entry.value;
+      body: Container(
+        padding: const EdgeInsets.all(20),
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// MONTH HEADER
-                        Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F1115), Color(0xFF1A1C22)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+
+        child: SafeArea(
+          child: ListView(
+            children: [
+              const Text(
+                "Transaction History",
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 25),
+
+              ...groupedByMonth.entries.map((monthEntry) {
+                /// GROUP BY DATE
+                Map<String, List<Expense>> groupedByDate = {};
+
+                for (var expense in monthEntry.value) {
+                  String dateKey = DateFormat("dd MMM").format(expense.date);
+
+                  groupedByDate.putIfAbsent(dateKey, () => []);
+
+                  groupedByDate[dateKey]!.add(expense);
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// MONTH HEADER
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+
+                      child: Text(
+                        monthEntry.key,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    ...groupedByDate.entries.map((dateEntry) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// DATE HEADER
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10, bottom: 10),
+
+                            child: Text(
+                              dateEntry.key,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
                             ),
                           ),
-                        ),
 
-                        /// EXPENSE LIST
-                        ...expenses.map((e) {
-                          int index = widget.expenses.indexOf(e);
+                          ...dateEntry.value.map((expense) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
 
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            child: ListTile(
-                              leading: Icon(
-                                e.paymentType == "Cash"
-                                    ? Icons.money
-                                    : Icons.credit_card,
-                                color: const Color(0xFF4F7C82),
-                              ),
+                              child: Dismissible(
+                                key: Key(expense.date.toString()),
 
-                              title: Text(e.category),
+                                direction: DismissDirection.endToStart,
 
-                              /// NOTE + DATE TIME
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(e.note),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    DateFormat(
-                                      "dd MMM yyyy • HH:mm",
-                                    ).format(e.date),
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                ],
-                              ),
 
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "₹${e.amount}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  child: const Icon(
+                                    Icons.delete,
+                                    color: Colors.white,
                                   ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
+                                ),
+
+                                onDismissed: (direction) {
+                                  setState(() {
+                                    ExpenseService.deleteExpense(expense);
+                                  });
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Expense deleted"),
                                     ),
-                                    onPressed: () => confirmDelete(e.id, index),
-                                  ),
-                                ],
+                                  );
+                                },
+
+                                child: TransactionCard(
+                                  title: expense.note,
+                                  category: expense.category,
+                                  amount: "₹${expense.amount}",
+                                  date: DateFormat(
+                                    "HH:mm",
+                                  ).format(expense.date),
+                                ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                            );
+                          }),
+                        ],
+                      );
+                    }),
+                  ],
+                );
+              }),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

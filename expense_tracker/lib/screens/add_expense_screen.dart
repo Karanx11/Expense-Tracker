@@ -1,5 +1,7 @@
-import '../services/api_service.dart';
 import 'package:flutter/material.dart';
+import '../services/notification_service.dart';
+import '../services/expense_service.dart';
+import '../models/expense.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -9,180 +11,121 @@ class AddExpenseScreen extends StatefulWidget {
 }
 
 class _AddExpenseScreenState extends State<AddExpenseScreen> {
-  final amountController = TextEditingController();
-  final noteController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
+  final TextEditingController noteController = TextEditingController();
 
-  String paymentType = "Cash";
-  String category = "Food";
+  double monthlyBudget = 10000;
 
-  bool loading = false;
-
-  final formKey = GlobalKey<FormState>();
-
-  List<String> categories = [
-    "Food",
-    "Shopping",
-    "Travel",
-    "Bills",
-    "Entertainment",
-    "Other",
-  ];
-
-  Future<void> saveExpense() async {
-    if (!formKey.currentState!.validate()) return;
-
+  void addExpense() {
     double amount = double.tryParse(amountController.text) ?? 0;
 
     if (amount <= 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Enter a valid amount")));
       return;
     }
 
-    setState(() {
-      loading = true;
-    });
+    final expense = Expense(
+      amount: amount,
+      category: categoryController.text,
+      note: noteController.text,
+      date: DateTime.now(),
+      id: '',
+    );
 
-    try {
-      await ApiService.addExpense(
-        amount,
-        category,
-        paymentType,
-        noteController.text,
-        DateTime.now().toIso8601String(),
-      );
+    ExpenseService.addExpense(expense);
 
-      if (!mounted) return;
+    double totalSpent = 0;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Expense added successfully")),
-      );
-
-      /// Safely return to dashboard
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) Navigator.pop(context, true);
-      });
-    } catch (e) {
-      debugPrint("Expense error: $e");
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to add expense")));
-    } finally {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
+    for (var e in ExpenseService.getExpenses()) {
+      totalSpent += e.amount;
     }
-  }
 
-  @override
-  void dispose() {
-    amountController.dispose();
-    noteController.dispose();
-    super.dispose();
+    double remaining = monthlyBudget - totalSpent;
+
+    /// Notifications
+    if (remaining <= 0) {
+      NotificationService.showNotification(
+        "Budget Limit Exceeded",
+        "You have exceeded your monthly budget!",
+      );
+    } else {
+      NotificationService.showNotification(
+        "Expense Added",
+        "Remaining Budget: ₹$remaining",
+      );
+    }
+
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Add Expense")),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: formKey,
-          child: Column(
-            children: [
-              /// AMOUNT
-              TextFormField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Enter amount";
-                  }
-                  return null;
-                },
-                decoration: const InputDecoration(
-                  labelText: "Amount",
-                  prefixIcon: Icon(Icons.currency_rupee),
+
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+
+        child: Column(
+          children: [
+            /// AMOUNT
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+
+              decoration: InputDecoration(
+                labelText: "Amount",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 15),
+            const SizedBox(height: 20),
 
-              /// CATEGORY
-              DropdownButtonFormField(
-                value: category,
-                items: categories.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat));
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    category = value!;
-                  });
-                },
-                decoration: const InputDecoration(
-                  labelText: "Category",
-                  prefixIcon: Icon(Icons.category),
+            /// CATEGORY
+            TextField(
+              controller: categoryController,
+
+              decoration: InputDecoration(
+                labelText: "Category",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 15),
+            const SizedBox(height: 20),
 
-              /// PAYMENT TYPE
-              DropdownButtonFormField(
-                value: paymentType,
-                items: const [
-                  DropdownMenuItem(value: "Cash", child: Text("Cash")),
-                  DropdownMenuItem(value: "Online", child: Text("Online")),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    paymentType = value!;
-                  });
-                },
-                decoration: const InputDecoration(
-                  labelText: "Payment Type",
-                  prefixIcon: Icon(Icons.payment),
+            /// NOTE
+            TextField(
+              controller: noteController,
+
+              decoration: InputDecoration(
+                labelText: "Note",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
+            ),
 
-              const SizedBox(height: 15),
+            const SizedBox(height: 30),
 
-              /// NOTE
-              TextField(
-                controller: noteController,
-                decoration: const InputDecoration(
-                  labelText: "Note",
-                  prefixIcon: Icon(Icons.notes),
+            /// SAVE BUTTON
+            SizedBox(
+              width: double.infinity,
+
+              child: ElevatedButton(
+                onPressed: addExpense,
+
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-              ),
 
-              const SizedBox(height: 30),
-
-              /// SAVE BUTTON
-              SizedBox(
-                width: double.infinity,
-                child: loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: saveExpense,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const Text(
-                          "Save Expense",
-                          style: TextStyle(fontSize: 16),
-                        ),
-                      ),
+                child: const Text("Add Expense"),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

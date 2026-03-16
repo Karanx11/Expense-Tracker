@@ -1,11 +1,11 @@
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
-  static Future requestPermissions() async {
-    await Permission.sms.request();
+  static Future<void> requestSMSPermission() async {
+    PermissionStatus status = await Permission.sms.request();
 
-    await Permission.notification.request();
-
-    await Permission.phone.request();
+    if (status.isDenied) {
+      print("SMS permission denied");
+    }
   }
 }

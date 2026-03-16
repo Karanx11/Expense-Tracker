@@ -1,15 +1,9 @@
-import '../services/api_service.dart';
-import '../services/notification_listener_service.dart';
-import '../services/notification_service.dart';
-import '../services/sms_service.dart';
-import '../services/socket_service.dart';
-import '../utils/sms_parser.dart';
 import 'package:flutter/material.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/transaction_card.dart';
+import '../services/expense_service.dart';
 import '../models/expense.dart';
-import 'history_screen.dart';
-import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:async';
+import 'add_expense_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -19,230 +13,79 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  double monthlyLimit = 10000;
-  double totalSpent = 0;
-
-  double cashTotal = 0;
-  double onlineTotal = 0;
-
-  bool loading = true;
-
-  List<Expense> expenses = [];
-
-  DateTime budgetMonth = DateTime.now();
-
-  final SmsService smsService = SmsService();
-  final SocketService socketService = SocketService();
-
-  Timer? smsTimer;
+  double monthlyBudget = 10000;
+  DateTime lastResetDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
-
-    loadBudget();
     checkMonthlyReset();
-    loadExpenses();
-
-    socketService.connect();
-
-    socketService.listenExpense((data) {
-      loadExpenses();
-    });
-
-    /// SMS CHECK
-    smsTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
-      fetchSmsExpenses();
-    });
-
-    /// NOTIFICATION LISTENER
-    NotificationListenerService.startListening((text) async {
-      print("Payment notification: $text");
-
-      final transaction = parseTransaction(text);
-
-      if (transaction != null) {
-        await ApiService.addExpense(
-          transaction["amount"],
-          transaction["category"],
-          transaction["paymentType"],
-          transaction["note"],
-          DateTime.now().toIso8601String(),
-        );
-
-        await loadExpenses();
-
-        double remaining = monthlyLimit - totalSpent;
-
-        await NotificationService.showExpenseNotification(
-          transaction["amount"],
-          remaining,
-        );
-
-        if (totalSpent > monthlyLimit) {
-          await NotificationService.showLimitWarning();
-        }
-      }
-    });
   }
 
-  @override
-  void dispose() {
-    socketService.socket.dispose();
-    smsTimer?.cancel();
-    super.dispose();
-  }
-
-  /// LOAD BUDGET
-  Future<void> loadBudget() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    setState(() {
-      monthlyLimit = prefs.getDouble("monthlyLimit") ?? 10000;
-    });
-  }
-
-  /// SAVE BUDGET
-  Future<void> saveBudget(double value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setDouble("monthlyLimit", value);
-  }
-
-  /// RESET MONTHLY
+  /// RESET EXPENSES EVERY NEW MONTH
   void checkMonthlyReset() {
     DateTime now = DateTime.now();
 
-    if (budgetMonth.month != now.month || budgetMonth.year != now.year) {
-      totalSpent = 0;
-      expenses.clear();
-      budgetMonth = now;
+    if (now.month != lastResetDate.month || now.year != lastResetDate.year) {
+      lastResetDate = now;
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("New month started. Budget reset.")),
-        );
-      });
+      /// clear expenses for new month
+      ExpenseService.expenses.clear();
+
+      setState(() {});
     }
   }
 
-  /// LOAD EXPENSES
-  Future<void> loadExpenses() async {
-    try {
-      final data = await ApiService.getExpenses();
-
-      expenses = data.map<Expense>((e) => Expense.fromJson(e)).toList();
-
-      calculateTotals();
-
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          loading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to load expenses")),
-        );
-      }
-    }
-  }
-
-  /// CALCULATE TOTALS
-  void calculateTotals() {
-    totalSpent = 0;
-    cashTotal = 0;
-    onlineTotal = 0;
-
-    for (var e in expenses) {
-      totalSpent += e.amount;
-
-      if (e.paymentType == "Cash") {
-        cashTotal += e.amount;
-      } else {
-        onlineTotal += e.amount;
-      }
-    }
-  }
-
-  /// SMS DETECTION
-  Future<void> fetchSmsExpenses() async {
-    try {
-      final messages = await smsService.getMessages();
-
-      for (var sms in messages.take(20)) {
-        final transaction = parseTransaction(sms.body ?? "");
-
-        if (transaction != null) {
-          bool exists = expenses.any((e) =>
-              e.amount == transaction["amount"] &&
-              e.note == transaction["note"]);
-
-          if (!exists) {
-            await ApiService.addExpense(
-              transaction["amount"],
-              transaction["category"],
-              transaction["paymentType"],
-              transaction["note"],
-              DateTime.now().toIso8601String(),
-            );
-
-            await loadExpenses();
-
-            double remaining = monthlyLimit - totalSpent;
-
-            await NotificationService.showExpenseNotification(
-                transaction["amount"], remaining);
-
-            if (totalSpent > monthlyLimit) {
-              await NotificationService.showLimitWarning();
-            }
-          }
-
-          break;
-        }
-      }
-    } catch (e) {
-      print("SMS Error: $e");
-    }
-  }
-
-  /// SET BUDGET
-  void setLimit() {
+  /// SET BUDGET DIALOG
+  void showSetBudgetDialog(BuildContext context) {
     TextEditingController controller = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+
           title: const Text("Set Monthly Budget"),
+
           content: TextField(
             controller: controller,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(hintText: "Enter budget amount"),
+
+            decoration: InputDecoration(
+              hintText: "Enter amount",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
+
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancel")),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Cancel"),
+            ),
+
             ElevatedButton(
-              onPressed: () async {
-                if (controller.text.isNotEmpty) {
-                  double value = double.parse(controller.text);
-
-                  setState(() {
-                    monthlyLimit = value;
-                  });
-
-                  await saveBudget(value);
-                }
+              onPressed: () {
+                setState(() {
+                  monthlyBudget =
+                      double.tryParse(controller.text) ?? monthlyBudget;
+                });
 
                 Navigator.pop(context);
               },
+
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
               child: const Text("Save"),
             ),
           ],
@@ -251,194 +94,255 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// TOP CATEGORY
-  String getTopCategory() {
-    Map<String, double> data = {};
-
-    for (var e in expenses) {
-      data[e.category] = (data[e.category] ?? 0) + e.amount;
-    }
-
-    if (data.isEmpty) return "No data";
-
-    var top = data.entries.reduce((a, b) => a.value > b.value ? a : b);
-
-    return "${top.key} ₹${top.value.toStringAsFixed(0)}";
-  }
-
-  Color getBudgetColor(double progress) {
-    if (progress < 0.4) return Colors.green;
-    if (progress < 0.7) return Colors.blue;
-    if (progress < 0.9) return Colors.orange;
-
-    return Colors.red;
-  }
-
   @override
   Widget build(BuildContext context) {
-    double remaining = monthlyLimit - totalSpent;
+    checkMonthlyReset();
 
-    double progress =
-        monthlyLimit == 0 ? 0 : (totalSpent / monthlyLimit).clamp(0, 1);
+    final List<Expense> expenses = ExpenseService.getExpenses();
+
+    double totalSpent = 0;
+
+    for (var expense in expenses) {
+      totalSpent += expense.amount;
+    }
+
+    double remaining = monthlyBudget - totalSpent;
+
+    double progress = totalSpent / monthlyBudget;
+
+    if (progress > 1) {
+      progress = 1;
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Dashboard")),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: loadExpenses,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// TOTAL SPENT
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B2E33),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
+      /// + BUTTON ABOVE NAVBAR
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 90),
+
+        child: FloatingActionButton(
+          onPressed: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddExpenseScreen()),
+            );
+
+            setState(() {});
+          },
+
+          child: const Icon(Icons.add),
+        ),
+      ),
+
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+      body: Container(
+        padding: const EdgeInsets.all(20),
+
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F1115), Color(0xFF1A1C22)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+
+              children: [
+                const Text(
+                  "Dashboard",
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 30),
+
+                /// MONTHLY BUDGET CARD
+                GlassCard(
+                  height: 120,
+
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                    children: [
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+
                         children: [
-                          const Text("Total Spent",
-                              style: TextStyle(color: Colors.white70)),
-                          const SizedBox(height: 8),
-                          Text("₹$totalSpent",
-                              style: const TextStyle(
-                                  fontSize: 34, fontWeight: FontWeight.bold)),
+                          const Text(
+                            "Monthly Budget",
+                            style: TextStyle(fontSize: 16),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Text(
+                            "₹$monthlyBudget",
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ],
                       ),
-                    ),
 
-                    const SizedBox(height: 20),
+                      const Icon(Icons.account_balance_wallet, size: 40),
+                    ],
+                  ),
+                ),
 
-                    /// CASH / ONLINE
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.money),
-                              title: const Text("Cash"),
-                              trailing: Text("₹$cashTotal"),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Card(
-                            child: ListTile(
-                              leading: const Icon(Icons.credit_card),
-                              title: const Text("Online"),
-                              trailing: Text("₹$onlineTotal"),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 20),
 
-                    const SizedBox(height: 20),
+                /// BUDGET PROGRESS
+                GlassCard(
+                  height: 190,
 
-                    /// BUDGET
-                    const Text("Monthly Budget"),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
-                    const SizedBox(height: 10),
-
-                    LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 10,
-                      valueColor:
-                          AlwaysStoppedAnimation(getBudgetColor(progress)),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text("Remaining: ₹$remaining"),
-
-                    const SizedBox(height: 8),
-
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: const Icon(Icons.account_balance_wallet),
-                        label: const Text("Set Monthly Budget"),
-                        onPressed: setLimit,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// TOP CATEGORY
-                    Card(
-                      child: ListTile(
-                        leading: const Icon(Icons.star, color: Colors.orange),
-                        title: const Text("Top Category"),
-                        trailing: Text(getTopCategory()),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// RECENT
-                    const Text("Recent Transactions",
+                    children: [
+                      const Text(
+                        "Budget Usage",
                         style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
-                    const SizedBox(height: 10),
+                      const SizedBox(height: 20),
 
-                    Column(
-                      children: expenses.take(5).map((e) {
-                        return Card(
-                          child: ListTile(
-                            leading: Icon(
-                              e.paymentType == "Cash"
-                                  ? Icons.money
-                                  : Icons.credit_card,
-                              color: const Color(0xFF4F7C82),
+                      LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 10,
+                        borderRadius: BorderRadius.circular(10),
+
+                        color: progress < 0.5
+                            ? Colors.green
+                            : progress < 0.8
+                            ? Colors.orange
+                            : Colors.red,
+
+                        backgroundColor: Colors.white24,
+                      ),
+
+                      const SizedBox(height: 15),
+
+                      Text(
+                        "Spent ₹$totalSpent of ₹$monthlyBudget",
+                        style: const TextStyle(fontSize: 14),
+                      ),
+
+                      const Spacer(),
+
+                      SizedBox(
+                        width: double.infinity,
+
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            showSetBudgetDialog(context);
+                          },
+
+                          icon: const Icon(Icons.edit),
+                          label: const Text("Set Budget Limit"),
+
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            title: Text(e.note),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(e.category),
-                                Text(
-                                  DateFormat("dd MMM yyyy • HH:mm")
-                                      .format(e.date),
-                                  style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                            trailing: Text("₹${e.amount}"),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// SPENT & REMAINING CARDS
+                Row(
+                  children: [
+                    Expanded(
+                      child: GlassCard(
+                        height: 120,
+
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+
+                          children: [
+                            const Icon(Icons.trending_down),
+
+                            const SizedBox(height: 10),
+
+                            const Text("Spent"),
+
+                            Text(
+                              "₹$totalSpent",
+                              style: const TextStyle(fontSize: 18),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(width: 15),
 
-                    Center(
-                      child: TextButton(
-                        child: const Text("View All Transactions"),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  HistoryScreen(expenses: expenses),
+                    Expanded(
+                      child: GlassCard(
+                        height: 120,
+
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+
+                          children: [
+                            const Icon(Icons.savings),
+
+                            const SizedBox(height: 10),
+
+                            const Text("Remaining"),
+
+                            Text(
+                              "₹$remaining",
+                              style: const TextStyle(fontSize: 18),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
+
+                const SizedBox(height: 30),
+
+                const Text(
+                  "Recent Transactions",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 15),
+
+                ...expenses.map((expense) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+
+                    child: TransactionCard(
+                      title: expense.note,
+                      category: expense.category,
+                      amount: "₹${expense.amount}",
+                      date: expense.date.toString(),
+                    ),
+                  );
+                }).toList(),
+
+                const SizedBox(height: 120),
+              ],
             ),
+          ),
+        ),
+      ),
     );
   }
 }

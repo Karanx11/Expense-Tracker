@@ -1,19 +1,11 @@
-import 'screens/splash_screen.dart';
-import 'services/notification_service.dart';
-import 'services/permission_handler.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'screens/main_screen.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.init();
-  await PermissionService.requestPermissions();
-  await Hive.initFlutter();
-  await Firebase.initializeApp();
 
-  await Hive.openBox("expenseBox");
-  await Hive.openBox("settingsBox");
+  await NotificationService.init();
 
   runApp(const ExpenseTrackerApp());
 }
@@ -26,26 +18,8 @@ class ExpenseTrackerApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: "Expense Tracker",
-      theme: ThemeData(
-        scaffoldBackgroundColor: Colors.black,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0B2E33),
-          centerTitle: true,
-        ),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF4F7C82),
-          secondary: Color(0xFF93B1B5),
-        ),
-        cardColor: const Color(0xFF0B2E33),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4F7C82),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 14),
-          ),
-        ),
-      ),
-      home: const SplashScreen(),
+      theme: ThemeData.dark(),
+      home: const MainScreen(),
     );
   }
 }

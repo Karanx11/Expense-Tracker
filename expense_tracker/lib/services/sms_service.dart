@@ -1,15 +1,17 @@
-import 'package:telephony_fix/telephony.dart';
+import 'package:telephony/telephony.dart';
 
-class SmsService {
-  final Telephony telephony = Telephony.instance;
+class SMSService {
+  static final Telephony telephony = Telephony.instance;
 
-  Future<List<SmsMessage>> getMessages() async {
+  /// Request SMS permission
+  static Future<bool> requestPermission() async {
     bool? permissionsGranted = await telephony.requestPhoneAndSmsPermissions;
 
-    if (permissionsGranted != true) {
-      return [];
-    }
+    return permissionsGranted ?? false;
+  }
 
+  /// Read inbox SMS
+  static Future<List<SmsMessage>> readInbox() async {
     List<SmsMessage> messages = await telephony.getInboxSms(
       columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
       sortOrder: [OrderBy(SmsColumn.DATE, sort: Sort.DESC)],

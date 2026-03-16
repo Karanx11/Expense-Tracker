@@ -1,205 +1,158 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'login_screen.dart';
+import '../widgets/glass_card.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  String phone = "";
-  String email = "";
-  String uid = "";
-
-  bool loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    loadProfile();
-  }
-
-  /// LOAD PROFILE FROM FIREBASE
-  Future loadProfile() async {
-    User? user = FirebaseAuth.instance.currentUser;
-
-    setState(() {
-      phone = user?.phoneNumber ?? "";
-      email = user?.email ?? "Not provided";
-      uid = user?.uid ?? "";
-      loading = false;
-    });
-  }
-
-  /// LOGOUT
-  Future logout() async {
-    await FirebaseAuth.instance.signOut();
-
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
-  }
-
-  /// DELETE ACCOUNT
-  Future deleteAccount() async {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Delete Account"),
-          content: const Text("Are you sure you want to delete your account?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                Navigator.pop(context);
-
-                User? user = FirebaseAuth.instance.currentUser;
-
-                await user?.delete();
-
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (route) => false,
-                );
-              },
-              child: const Text("Delete"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget box(Widget child) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: child,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Profile")),
-      body: loading
-          ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  /// PROFILE ICON
-                  box(
-                    const Center(
-                      child: CircleAvatar(
-                        radius: 45,
-                        backgroundColor: Color(0xFF4F7C82),
-                        child: Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
+      body: Container(
+        padding: const EdgeInsets.all(20),
 
-                  const SizedBox(height: 15),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F1115), Color(0xFF1A1C22)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
 
-                  /// PHONE
-                  box(
-                    Row(
-                      children: [
-                        const Icon(Icons.phone),
-                        const SizedBox(width: 10),
-                        Text(phone),
-                      ],
-                    ),
-                  ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
 
-                  const SizedBox(height: 10),
-
-                  /// EMAIL
-                  box(
-                    Row(
-                      children: [
-                        const Icon(Icons.email),
-                        const SizedBox(width: 10),
-                        Text(email),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  /// USER ID
-                  box(
-                    Row(
-                      children: [
-                        const Icon(Icons.fingerprint),
-                        const SizedBox(width: 10),
-                        Expanded(child: Text(uid)),
-                      ],
-                    ),
-                  ),
-
-                  const Spacer(),
-
-                  /// LOGOUT
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: logout,
-                      icon: const Icon(Icons.logout),
-                      label: const Text("Logout"),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  /// DELETE ACCOUNT
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: deleteAccount,
-                      icon: const Icon(Icons.delete),
-                      label: const Text("Delete Account"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  const Text(
-                    "Built by Karan",
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-                ],
+              /// PROFILE AVATAR
+              const CircleAvatar(
+                radius: 55,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, size: 60, color: Colors.white),
               ),
-            ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Karan Sharma",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// USER INFO CARD
+              GlassCard(
+                height: 160,
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Row(
+                      children: [
+                        Icon(Icons.email),
+                        SizedBox(width: 10),
+                        Text("karan@email.com"),
+                      ],
+                    ),
+
+                    SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        Icon(Icons.phone),
+                        SizedBox(width: 10),
+                        Text("+91 9876543210"),
+                      ],
+                    ),
+
+                    SizedBox(height: 20),
+
+                    Row(
+                      children: [
+                        Icon(Icons.person),
+                        SizedBox(width: 10),
+                        Text("User ID: 10234"),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              /// LOGOUT BUTTON
+              GlassCard(
+                height: 70,
+                child: InkWell(
+                  onTap: () {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text("Logged out")));
+                  },
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout, color: Colors.orange),
+                      SizedBox(width: 10),
+                      Text("Logout", style: TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              /// DELETE ACCOUNT
+              GlassCard(
+                height: 70,
+                child: InkWell(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        return AlertDialog(
+                          title: const Text("Delete Account"),
+                          content: const Text(
+                            "Are you sure you want to delete your account?",
+                          ),
+
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Text("Cancel"),
+                            ),
+
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              child: const Text(
+                                "Delete",
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.delete, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text("Delete Account", style: TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

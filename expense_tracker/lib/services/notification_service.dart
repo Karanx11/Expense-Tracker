@@ -1,68 +1,29 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'dart:ui';
+
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin notifications =
-      FlutterLocalNotificationsPlugin();
-
-  /// Initialize notifications
   static Future<void> init() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-    );
-
-    await notifications.initialize(settings);
+    await AwesomeNotifications().initialize(null, [
+      NotificationChannel(
+        channelKey: 'expense_channel',
+        channelName: 'Expense Alerts',
+        channelDescription: 'Notifications for expense tracker',
+        defaultColor: const Color(0xFF9D50DD),
+        importance: NotificationImportance.High,
+        channelShowBadge: true,
+      ),
+    ], debug: true);
   }
 
-  /// Show notification when limit exceeded
-  static Future<void> showLimitWarning() async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'limit_channel',
-          'Limit Alerts',
-          channelDescription: 'Alerts when spending limit is exceeded',
-          importance: Importance.max,
-          priority: Priority.high,
-          playSound: true,
-        );
-
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await notifications.show(
-      0,
-      "⚠ Budget Limit Exceeded",
-      "You have crossed your monthly spending limit!",
-      details,
-    );
-  }
-
-  /// Show notification for each expense
-  static Future<void> showExpenseNotification(
-    double amount,
-    double remaining,
-  ) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'expense_channel',
-          'Expense Notifications',
-          channelDescription: 'Shows spending updates',
-          importance: Importance.high,
-          priority: Priority.high,
-        );
-
-    const NotificationDetails details = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await notifications.show(
-      1,
-      "Expense Detected",
-      "₹$amount spent. Remaining budget ₹${remaining.toStringAsFixed(0)}",
-      details,
+  static Future<void> showNotification(String title, String body) async {
+    await AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 1,
+        channelKey: 'expense_channel',
+        title: title,
+        body: body,
+      ),
     );
   }
 }
