@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:expense_frontend/features/auth/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
+import '../../../shared/services/api_service.dart';
 import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -14,13 +16,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    checkLogin();
+  }
 
-    Timer(const Duration(seconds: 3), () {
+  Future<void> checkLogin() async {
+    final token = await ApiService().getToken();
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (token != null && token.isNotEmpty) {
+      /// ✅ Already logged in
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+      );
+    } else {
+      /// ❌ Not logged in
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => LoginScreen()),
       );
-    });
+    }
   }
 
   @override

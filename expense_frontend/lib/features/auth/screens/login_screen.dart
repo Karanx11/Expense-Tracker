@@ -1,10 +1,11 @@
 import 'dart:ui';
-import 'package:expense_frontend/features/auth/services/auth_service.dart';
+import 'package:expense_frontend/features/auth/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_textfield.dart';
 import 'signup_screen.dart';
-import 'forgot_password_screen.dart'; // 👈 ADD THIS IMPORT
+import 'forgot_password_screen.dart';
+import '../../../shared/services/api_service.dart';
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -92,17 +93,26 @@ class LoginScreen extends StatelessWidget {
                       AuthButton(
                         text: "Login",
                         onPressed: () async {
-                          final res = await AuthService().login(
+                          final res = await ApiService().login(
                             emailController.text.trim(),
                             passwordController.text.trim(),
                           );
 
-                          if (res != null) {
-                            ScaffoldMessenger.of(
+                          if (res["token"] != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Login Success")),
+                            );
+
+                            Navigator.pushReplacement(
                               context,
-                            ).showSnackBar(SnackBar(content: Text(res)));
+                              MaterialPageRoute(
+                                builder: (_) => const DashboardScreen(),
+                              ),
+                            );
                           } else {
-                            // TODO: Navigate to Dashboard
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(res["msg"] ?? "Error")),
+                            );
                           }
                         },
                       ),

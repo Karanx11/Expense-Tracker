@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/authMiddleware");
-const { getDashboard } = require("../controllers/dashboardController");
+const { setLimit } = require("../controllers/monthlyLimitController");
 
-router.get("/", auth, getDashboard);
+router.post("/", auth, setLimit);
 
 module.exports = router;
