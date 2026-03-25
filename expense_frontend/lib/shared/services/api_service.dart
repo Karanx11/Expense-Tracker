@@ -181,4 +181,31 @@ class ApiService {
       throw Exception("Limit Error: $e");
     }
   }
+
+  /// =========================
+  /// 🗑️ DELETE EXPENSE
+  /// =========================
+
+  Future<Map<String, dynamic>> deleteExpense(String id) async {
+    try {
+      final res = await http.delete(
+        Uri.parse("$baseUrl/expenses/$id"),
+        headers: await _headers(),
+      );
+
+      print("DELETE STATUS: ${res.statusCode}");
+      print("DELETE BODY: ${res.body}");
+
+      final data = jsonDecode(res.body);
+
+      if (res.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data["message"] ?? "Failed to delete expense");
+      }
+    } catch (e) {
+      print("DELETE ERROR: $e");
+      throw Exception("Delete Error: $e");
+    }
+  }
 }

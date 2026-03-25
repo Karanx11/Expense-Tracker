@@ -4,7 +4,6 @@ import 'package:shimmer/shimmer.dart';
 import '../../../shared/services/api_service.dart';
 import '../../expense/screens/add_expense_screen.dart';
 import '../../expense/screens/monthly_limit_screen.dart';
-import '../../../core/utils/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,77 +16,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Map<String, dynamic>? data;
   bool loading = true;
 
-  double? lastDetectedAmount;
-  bool isDialogOpen = false;
-
   @override
   void initState() {
     super.initState();
     fetchData();
   }
 
-  /// ✅ EXPENSE POPUP (FIXED)
-  void showExpenseSuggestion(double amount) {
-    if (isDialogOpen) return;
-
-    isDialogOpen = true;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("💡 Expense Detected"),
-        content: Text("₹$amount spent\nAdd this expense?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              isDialogOpen = false;
-            },
-            child: const Text("No"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext);
-
-              try {
-                await ApiService().postExpense({
-                  "amount": amount,
-                  "category": "Others",
-                  "note": "Auto detected",
-                  "date": DateTime.now().toIso8601String(),
-                });
-
-                await NotificationService.show(
-                  "Expense Added 💰",
-                  "₹$amount added",
-                );
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("Expense Added")));
-
-                await fetchData();
-              } catch (e) {
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Failed to add expense")),
-                );
-              }
-
-              isDialogOpen = false;
-            },
-            child: const Text("Yes"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// ✅ FETCH DATA
+  /// ✅ FETCH DASHBOARD
   Future<void> fetchData() async {
     try {
       final res = await ApiService().getDashboard();
@@ -106,6 +41,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Failed to load dashboard")));
+    }
+  }
+
+  /// ✅ DELETE EXPENSE
+  Future<void> deleteExpense(String id) async {
+    try {
+      await ApiService().deleteExpense(id);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Expense Deleted")));
+
+      await fetchData(); // 🔥 refresh budget + UI
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Delete failed")));
     }
   }
 
@@ -149,7 +101,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         onRefresh: fetchData,
         child: Stack(
           children: [
-            /// 🌌 Background
+            /// 🌌 BACKGROUND
             Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
@@ -162,12 +114,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: loading
                   ? _buildShimmer()
                   : SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          /// Header
                           const Text(
                             "Dashboard",
                             style: TextStyle(
@@ -178,31 +128,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                           const SizedBox(height: 20),
 
-                          /// 🔥 SET BUDGET BUTTON (ADDED BACK)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: Colors.black,
-                              ),
-                              onPressed: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const MonthlyLimitScreen(),
-                                  ),
-                                );
-
-                                if (result == true) await fetchData();
-                              },
-                              child: const Text("Set Monthly Budget"),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          /// Cards
+                          /// ✅ FIXED CARDS (NO OVERFLOW)
                           Row(
                             children: [
                               Expanded(
@@ -212,7 +138,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   icon: Icons.arrow_downward,
                                 ),
                               ),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: _glassCard(
                                   title: "Balance",
@@ -223,24 +149,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
 
-                          if ((data?["balance"] ?? 0) < 0)
-                            const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Text(
-                                "⚠️ You are overspending!",
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-
                           const SizedBox(height: 20),
 
-                          /// Budget Progress
+                          /// ✅ BUDGET CARD (BUTTON INSIDE)
                           _glassContainer(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text("Monthly Budget"),
+
                                 const SizedBox(height: 10),
+
                                 Text(
                                   "₹${data?["remaining"] ?? 0} left",
                                   style: const TextStyle(
@@ -248,7 +167,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
+
                                 const SizedBox(height: 10),
+
                                 LinearProgressIndicator(
                                   value: percent,
                                   minHeight: 10,
@@ -257,16 +178,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     getColor(percent),
                                   ),
                                 ),
+
+                                const SizedBox(height: 15),
+
+                                /// 🔥 BUTTON INSIDE CARD
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      foregroundColor: Colors.black,
+                                    ),
+                                    onPressed: () async {
+                                      final result = await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              const MonthlyLimitScreen(),
+                                        ),
+                                      );
+
+                                      if (result == true) await fetchData();
+                                    },
+                                    child: const Text("Set / Update Budget"),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
 
                           const SizedBox(height: 20),
 
-                          /// Transactions
                           const Text("Recent Transactions"),
                           const SizedBox(height: 10),
 
+                          /// ✅ TRANSACTION LIST WITH DELETE
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -286,47 +232,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildShimmer() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [_shimmerCard(), _shimmerCard()],
-    );
-  }
-
-  Widget _shimmerCard() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey.shade800,
-      highlightColor: Colors.grey.shade700,
-      child: Container(
-        height: 100,
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-    );
-  }
-
+  /// 🔥 FIXED CARD (NO OVERFLOW)
   Widget _glassCard({
     required String title,
     required String value,
     required IconData icon,
   }) {
     return _glassContainer(
-      height: 100,
+      height: 120, // 🔥 increased height to avoid overflow
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: Colors.white70),
-          const SizedBox(height: 10),
-          Text(title, style: const TextStyle(color: Colors.white70)),
-          const SizedBox(height: 5),
+          Icon(icon, color: Colors.white70, size: 22),
+          const SizedBox(height: 8),
           Text(
-            value,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            title,
+            style: const TextStyle(color: Colors.white70, fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _transactionTile(Map tx) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: _glassContainer(
+        child: ListTile(
+          leading: const Icon(Icons.receipt_long),
+          title: Text(tx["category"] ?? "Unknown"),
+          subtitle: Text(formatDate(tx["date"])),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("₹${tx["amount"] ?? 0}"),
+
+              const SizedBox(width: 10),
+
+              /// 🔥 DELETE BUTTON
+              GestureDetector(
+                onTap: () {
+                  deleteExpense(tx["_id"]); // make sure backend sends _id
+                },
+                child: const Icon(Icons.delete, color: Colors.red, size: 20),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -349,15 +308,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _transactionTile(Map tx) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: _glassContainer(
-        child: ListTile(
-          leading: const Icon(Icons.receipt_long),
-          title: Text(tx["category"] ?? "Unknown"),
-          subtitle: Text(formatDate(tx["date"])),
-          trailing: Text("₹${tx["amount"] ?? 0}"),
+  Widget _buildShimmer() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [_shimmerCard(), _shimmerCard()],
+    );
+  }
+
+  Widget _shimmerCard() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey.shade800,
+      highlightColor: Colors.grey.shade700,
+      child: Container(
+        height: 100,
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
         ),
       ),
     );

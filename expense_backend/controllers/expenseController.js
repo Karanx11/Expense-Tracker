@@ -114,14 +114,70 @@ const getExpenses = async (req, res) => {
 };
 
 
-/// ❌ DELETE EXPENSE
+/// ❌ DELETE EXPENSE (FIXED)
 const deleteExpense = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const expense = await Expense.findById(id);
+
+    if (!expense) {
+      return res.status(404).json({ msg: "Expense not found" });
+    }
+
+    const userObjectId = expense.user;
+
+    /// 🗑️ DELETE EXPENSE
     await Expense.findByIdAndDelete(id);
 
-    res.json({ msg: "Expense deleted" });
+    /// 💰 RESTORE WALLET BALANCE
+    const wallet = await Wallet.findOne({ user: userObjectId });
+
+    if (wallet) {
+      wallet.balance += expense.amount; // 🔥 add back money
+      await wallet.save();
+    }
+
+    /// 📅 RECALCULATE MONTHLY DATA
+    const now = new Date();
+
+    const limitData = await MonthlyLimit.findOne({
+      user: userObjectId,
+      month: now.getMonth(),
+      year: now.getFullYear(),
+    });
+
+    let totalSpent = 0;
+    let remaining = 0;
+
+    if (limitData) {
+      const expenses = await Expense.aggregate([
+        {
+          $match: {
+            user: userObjectId,
+            date: {
+              $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+              $lte: new Date(),
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: "$amount" },
+          },
+        },
+      ]);
+
+      totalSpent = expenses[0]?.total || 0;
+      remaining = limitData.limit - totalSpent;
+    }
+
+    res.json({
+      msg: "Expense deleted successfully",
+      totalSpent,
+      remaining,
+    });
 
   } catch (err) {
     console.error("DELETE ERROR:", err);
