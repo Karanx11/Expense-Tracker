@@ -8,7 +8,7 @@ import '../../../shared/services/api_service.dart';
 import '../../expense/screens/add_expense_screen.dart';
 import '../../expense/screens/monthly_limit_screen.dart';
 import '../../auth/screens/login_screen.dart';
-import '../../auth/screens/history_screen.dart';
+import '../../auth/screens/history_screen.dart'; // ✅ ADDED
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -30,22 +30,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// ================= FETCH DATA =================
+  /// ================= FETCH DATA =================
   Future<void> fetchData() async {
     try {
       final res = await ApiService().getDashboard();
 
       if (!mounted) return;
 
+      /// ✅ SAFE FALLBACK (VERY IMPORTANT)
+      final safeData = (res == null || res.isEmpty)
+          ? {"limit": 0, "totalExpenses": 0, "recentTransactions": []}
+          : {
+              "limit": res["limit"] ?? 0,
+              "totalExpenses": res["totalExpenses"] ?? 0,
+              "recentTransactions": res["recentTransactions"] ?? [],
+            };
+
       setState(() {
-        data = res;
+        data = safeData;
         loading = false;
       });
 
-      /// 🔥 Monthly reset check
       await checkMonthlyReset();
     } catch (e) {
+      print("🔥 FETCH ERROR: $e"); // 👈 IMPORTANT DEBUG
+
       if (!mounted) return;
-      setState(() => loading = false);
+
+      /// ✅ PREVENT UI BREAK EVEN ON ERROR
+      setState(() {
+        data = {"limit": 0, "totalExpenses": 0, "recentTransactions": []};
+        loading = false;
+      });
 
       ScaffoldMessenger.of(
         context,
@@ -59,7 +75,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final now = DateTime.now();
     final currentMonth = "${now.year}-${now.month}";
-
     final savedMonth = prefs.getString("month");
 
     if (savedMonth != currentMonth) {
@@ -69,6 +84,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
         data?["limit"] = 0;
         data?["totalExpenses"] = 0;
       });
+    }
+  }
+
+  /// ================= RESET EVERYTHING =================
+  /// ================= RESET EVERYTHING =================
+  Future<void> resetEverything() async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.delete_forever, color: Colors.white),
+            SizedBox(width: 10),
+            Text("Reset Everything", style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          "This will delete all transactions and reset your budget.\n\nContinue?",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Reset"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      /// 🔥 API CALL (YOU MUST IMPLEMENT THIS)
+      await ApiService().resetAll();
+
+      /// Clear UI instantly
+      setState(() {
+        data = {"limit": 0, "totalExpenses": 0, "recentTransactions": []};
+      });
+
+      /// Optional: clear local storage too
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove("month");
+
+      /// Refresh fresh data
+      fetchData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("All data reset successfully")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Reset failed")));
     }
   }
 
@@ -233,7 +309,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// ===== GAUGE CARD =====
                     _glassContainer(
                       child: Column(
                         children: [
@@ -241,7 +316,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             "Monthly Spending",
                             style: TextStyle(color: Colors.white70),
                           ),
-
                           const SizedBox(height: 20),
 
                           SizedBox(
@@ -281,7 +355,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   ],
                                 ),
 
-                                /// CENTER TEXT
                                 Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -315,7 +388,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                           const SizedBox(height: 20),
 
-                          /// STATS
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -333,7 +405,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 20),
 
-                    /// ===== BUTTON =====
                     GestureDetector(
                       onTap: () async {
                         final res = await Navigator.push(
@@ -371,7 +442,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     const SizedBox(height: 25),
 
-                    /// ===== TRANSACTIONS =====
                     const Text(
                       "Recent Transactions",
                       style: TextStyle(color: Colors.white),
@@ -395,6 +465,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ],
                       );
                     }),
+
+                    const SizedBox(height: 30),
+
+                    /// ✅ HISTORY BUTTON
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HistoryScreen(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          "View Full History",
+                          style: TextStyle(color: primaryColor),
+                        ),
+                      ),
+                    ),
+
+                    /// ✅ RESET BUTTON
+                    Center(
+                      child: TextButton(
+                        onPressed: resetEverything,
+                        child: const Text(
+                          "Reset Everything",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

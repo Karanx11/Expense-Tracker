@@ -224,4 +224,35 @@ class ApiService {
       throw Exception("Delete Error: $e");
     }
   }
+
+  /// =========================
+  /// 🔥 RESET EVERYTHING
+  /// =========================
+  Future<Map<String, dynamic>> resetAll() async {
+    try {
+      final res = await http.delete(
+        Uri.parse("$baseUrl/reset"),
+        headers: await _headers(),
+      );
+
+      print("RESET STATUS: ${res.statusCode}");
+      print("RESET BODY: ${res.body}");
+
+      /// ✅ HANDLE EMPTY RESPONSE SAFELY
+      if (res.body.isEmpty) {
+        return {"message": "Reset successful"};
+      }
+
+      final data = jsonDecode(res.body);
+
+      if (res.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data["message"] ?? "Failed to reset data");
+      }
+    } catch (e) {
+      print("🔥 RESET ERROR: $e");
+      throw Exception("Reset Error: $e");
+    }
+  }
 }

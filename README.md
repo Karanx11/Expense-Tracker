@@ -1,115 +1,189 @@
-# 💰 Expense Tracker App
+# 💸 Expense Tracker App
 
-A modern, full-stack **Expense Tracker Application** built with Flutter, Node.js, and MongoDB.  
-Track your expenses, manage budgets, and get smart insights in real-time.
-
----
-
-## 🌐 Live Demo
-
-🔗 Live Website: https://expense-tracker-website-9iy2.onrender.com/
+A full-stack **Expense Tracker App** built with **Flutter (Frontend)** and **Node.js + Express + MongoDB (Backend)**.
+It helps users manage daily expenses, set monthly budgets, and track spending visually.
 
 ---
 
-## 🚀 Features
+## 🚀 Live Demo
 
-### 🔐 Authentication
-- User Signup & Login
-- JWT Authentication
-- Secure Password Hashing
-- Persistent Login (Secure Storage)
+🔗 **Frontend (APK / App):** *Coming Soon*
+🔗 **Backend API:** *Coming Soon*
+
+---
+
+## 📸 Screenshots
 
 ### 📊 Dashboard
-- Total Expenses
-- Current Balance
-- Monthly Limit
-- Remaining Budget
-- Recent Transactions
 
-### 💸 Expense Management
-- Add Expense
-- Delete Expense
-- Category-based tracking
-- Notes + Date support
+![Dashboard](./expense_frontend/assets/images/dashboard.jpg)
 
-### 📉 Smart Budgeting
-- Set Monthly Limit
-- Auto calculation of remaining budget
-- Real-time updates
+---
 
-### 🤖 Smart Features
-- 📩 SMS Expense Detection (UPI)
-- 🧠 AI Category Detection (Food, Travel, Shopping, Bills)
-- 🔔 Notifications after every transaction
+### ➕ Add Expense
 
-### 📈 Analytics
-- Category-wise breakdown
-- Daily expense tracking
-- Monthly insights
+![Add Expense](./expense_frontend/assets/images/add_expense.jpg)
 
-### 🎨 UI/UX
-- Dark Theme (Premium Look)
-- Smooth Animations
-- Glassmorphism Design
-- Clean typography (Poppins)
+---
+
+### 📜 Transaction History
+
+![History](./expense_frontend/assets/images/history.jpg)
+
+---
+
+### 🎯 Monthly Budget
+
+![Monthly Budget](./expense_frontend/assets/images/monthly_budget.jpg)
+
+---
+
+## ✨ Features
+
+* 🔐 User Authentication (JWT आधारित)
+* 📊 Dashboard with spending insights
+* 💸 Add / Delete Expenses
+* 📅 Monthly Budget Management
+* 📜 Transaction History (grouped by month)
+* 🔄 Pull-to-refresh support
+* 🧹 Reset All Data (Full cleanup)
+* 🔒 Secure token storage (Flutter Secure Storage)
+* ⚡ Smooth UI with animations & shimmer loading
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### 📱 Frontend
-- Flutter
-- Dart
+
+* Flutter
+* Dart
+* Shimmer
+* Syncfusion Gauges
 
 ### 🌐 Backend
-- Node.js
-- Express.js
 
-### 🗄️ Database
-- MongoDB Atlas
-
-### 🔐 Auth & Storage
-- JWT Authentication
-- Flutter Secure Storage
+* Node.js
+* Express.js
+* MongoDB (Mongoose)
+* JWT Authentication
 
 ---
 
 ## 📂 Project Structure
 
-
+```bash
 expense_tracker/
 │
-├── expense_frontend/ # Flutter App
-├── expense_backend/ # Node.js API
+├── expense_frontend/   # Flutter App
+│   ├── lib/
+│   ├── assets/
 │
-├── models/
-├── controllers/
-├── routes/
-
+├── expense_backend/    # Node.js Backend
+│   ├── routes/
+│   ├── models/
+│   ├── controllers/
+```
 
 ---
 
 ## ⚙️ Installation & Setup
 
-### 1️⃣ Clone Repo
+### 🔹 1. Clone Repository
 
 ```bash
 git clone https://github.com/your-username/expense-tracker.git
 cd expense-tracker
-2️⃣ Backend Setup
+```
+
+---
+
+### 🔹 2. Backend Setup
+
+```bash
 cd expense_backend
 npm install
+```
 
-Create .env:
+Create `.env` file:
 
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret
+```env
 PORT=5000
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret_key
+```
 
-Run backend:
+Run server:
 
+```bash
 npm run dev
-3️⃣ Frontend Setup
+```
+
+---
+
+### 🔹 3. Frontend Setup
+
+```bash
 cd expense_frontend
 flutter pub get
+```
+
+Update API base URL in:
+
+```dart
+ApiService.baseUrl
+```
+
+Run app:
+
+```bash
 flutter run
+```
+
+---
+
+## 🔥 API Endpoints
+
+| Method | Endpoint      | Description        |
+| ------ | ------------- | ------------------ |
+| POST   | /auth/signup  | Register user      |
+| POST   | /auth/login   | Login user         |
+| GET    | /dashboard    | Get dashboard data |
+| POST   | /expenses     | Add expense        |
+| DELETE | /expenses/:id | Delete expense     |
+| POST   | /limit        | Set monthly limit  |
+| DELETE | /reset        | Reset all data     |
+
+---
+
+## 🧠 Learnings
+
+* Full-stack app development (Flutter + Node.js)
+* REST API integration
+* JWT authentication flow
+* MongoDB data handling
+* Debugging real-world issues (ObjectId vs String)
+
+---
+
+## 📌 Future Improvements
+
+* 📊 Charts & Analytics
+* ☁️ Cloud Deployment
+* 🔔 Notifications
+* 📤 Export reports (PDF/Excel)
+* 🤖 AI-based expense insights
+
+---
+
+## 👨‍💻 Author
+
+**Your Name**
+🎓 B.Tech CSE (AI & ML)
+💼 Aspiring Full Stack Developer
+
+---
+
+## ⭐ Show Your Support
+
+If you like this project, give it a ⭐ on GitHub!
