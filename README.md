@@ -7,9 +7,7 @@ It helps users manage daily expenses, set monthly budgets, and track spending vi
 
 ## 🚀 Live Demo
 
-🔗 **Frontend (APK / App):** *Coming Soon*
-🔗 **Backend API:** *Coming Soon*
-
+🔗 [Live-Link](https://expense-tracker-website-9iy2.onrender.com/)
 ---
 
 ## 📸 Screenshots
