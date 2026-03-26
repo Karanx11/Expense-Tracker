@@ -8,8 +8,8 @@ const expenseSchema = new mongoose.Schema(
 
     category: {
       type: String,
-      enum: ["Food", "Travel", "Shopping", "Bills", "Others"],
-      default: "Others",
+      enum: ["Food", "Travel", "Shopping", "Bills", "Other"],
+      default: "Other",
     },
 
     note: String,

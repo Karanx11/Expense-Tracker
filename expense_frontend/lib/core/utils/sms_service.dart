@@ -1,15 +1,20 @@
 import 'package:telephony/telephony.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../core/utils/category_detector.dart';
 
 class SmsService {
   final Telephony telephony = Telephony.instance;
   final storage = const FlutterSecureStorage();
 
   /// 🔥 INIT
-  Future<void> init(Function(double amount, DateTime date) onDetected) async {
-    bool? permissionsGranted = await telephony.requestSmsPermissions;
+  Future<void> init(
+    Function(double amount, DateTime date, String category) onDetected,
+  ) async {
+    bool? granted = await telephony.requestSmsPermissions;
 
-    if (!(permissionsGranted ?? false)) return;
+    print("SMS PERMISSION: $granted");
+
+    if (!(granted ?? false)) return;
 
     /// ✅ Get last processed time
     String? lastTimeStr = await storage.read(key: "last_sms_time");
@@ -29,7 +34,7 @@ class SmsService {
       /// ❌ Skip old SMS
       if (lastTime != null && smsDate.isBefore(lastTime)) continue;
 
-      _processMessage(msg.body ?? "", smsDate, onDetected);
+      await _processMessage(msg.body ?? "", smsDate, onDetected);
     }
 
     /// 🔥 LISTEN NEW SMS
@@ -47,37 +52,46 @@ class SmsService {
         /// ❌ Ignore old/replayed SMS
         if (lastTime != null && smsDate.isBefore(lastTime)) return;
 
-        _processMessage(message.body ?? "", smsDate, onDetected);
+        await _processMessage(message.body ?? "", smsDate, onDetected);
       },
+      listenInBackground: false,
     );
   }
 
   /// 🔍 PROCESS SMS
-  void _processMessage(
+  Future<void> _processMessage(
     String body,
     DateTime smsDate,
-    Function(double, DateTime) onDetected,
+    Function(double amount, DateTime date, String category) onDetected,
   ) async {
     final text = body.toLowerCase();
 
-    if (text.contains("debited") || text.contains("upi")) {
+    print("📩 SMS RECEIVED: $body");
+
+    /// ✅ STRICT FILTER (ONLY EXPENSE SMS)
+    if (text.contains("debited") && text.contains("upi")) {
       final amount = _extractAmount(body);
 
       if (amount != null) {
+        print("💸 EXPENSE DETECTED: ₹$amount");
+
         /// ✅ Save latest processed time
         await storage.write(
           key: "last_sms_time",
           value: smsDate.toIso8601String(),
         );
 
-        onDetected(amount, smsDate);
+        /// 🤖 Smart Category Detection
+        String category = CategoryDetector.detect(body);
+
+        onDetected(amount, smsDate, category);
       }
     }
   }
 
-  /// 💰 EXTRACT AMOUNT
+  /// EXTRACT AMOUNT (FOR ₹, INR, Rs)
   double? _extractAmount(String text) {
-    final regex = RegExp(r'(₹|INR)\s?(\d+(\.\d+)?)');
+    final regex = RegExp(r'(₹|INR|Rs\.?)\s?(\d+(\.\d+)?)');
     final match = regex.firstMatch(text);
 
     if (match != null) {

@@ -44,8 +44,8 @@ dependencies:
   shimmer: ^3.0.0
   firebase_core: ^4.6.0
   firebase_auth: ^6.3.0
-  telephony: ^0.2.0
   flutter_local_notifications: ^17.0.0
+  telephony: ^0.2.0
 
 dev_dependencies:
   flutter_test:

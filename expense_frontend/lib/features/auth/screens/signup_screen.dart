@@ -3,7 +3,6 @@ import 'package:expense_frontend/shared/services/api_service.dart';
 import 'package:flutter/material.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/auth_textfield.dart';
-import '../services/auth_service.dart';
 
 class SignupScreen extends StatelessWidget {
   SignupScreen({super.key});
