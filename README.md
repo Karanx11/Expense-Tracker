@@ -1,6 +1,6 @@
 # 💸 Expense Tracker App
 
-A full-stack **Expense Tracker App** built with **Flutter (Frontend)** and **Node.js + Express + MongoDB (Backend)**.
+A full-stack **Expense Tracker App** built with **Flutter (Frontend)** and **FireBase + Node.js + Express + MongoDB (Backend)**.
 It helps users manage daily expenses, set monthly budgets, and track spending visually.
 
 ---
@@ -92,7 +92,7 @@ expense_tracker/
 ### 🔹 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/expense-tracker.git
+git clone [https://github.com/your-username/expense-tracker.git](https://github.com/Karanx11/Expense-Tracker.git)
 cd expense-tracker
 ```
 
@@ -178,7 +178,7 @@ flutter run
 
 ## 👨‍💻 Author
 
-**Your Name**
+**Karan Sharma**
 🎓 B.Tech CSE (AI & ML)
 💼 Aspiring Full Stack Developer
 
