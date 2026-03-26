@@ -1,213 +1,115 @@
-# 📊 Expense Tracker App
+# 💰 Expense Tracker App
 
-A smart full-stack expense tracking application built with Flutter + Node.js + MongoDB that helps users manage their spending, track transactions, analyze expenses, and stay within their monthly budget.
+A modern, full-stack **Expense Tracker Application** built with Flutter, Node.js, and MongoDB.  
+Track your expenses, manage budgets, and get smart insights in real-time.
 
-The app can automatically detect transactions from SMS, calculate remaining budget, and send smart notifications to control spending.
+---
+
+## 🌐 Live Demo
+
+🔗 Live Website: https://expense-tracker-website-9iy2.onrender.com/
+
+---
 
 ## 🚀 Features
 
-## 💰 Expense Management
+### 🔐 Authentication
+- User Signup & Login
+- JWT Authentication
+- Secure Password Hashing
+- Persistent Login (Secure Storage)
 
-    Add expenses manually
+### 📊 Dashboard
+- Total Expenses
+- Current Balance
+- Monthly Limit
+- Remaining Budget
+- Recent Transactions
 
-    Auto detect expenses from bank SMS
+### 💸 Expense Management
+- Add Expense
+- Delete Expense
+- Category-based tracking
+- Notes + Date support
 
-    Categorize spending
+### 📉 Smart Budgeting
+- Set Monthly Limit
+- Auto calculation of remaining budget
+- Real-time updates
 
-    Track payment type (Cash / Online)
+### 🤖 Smart Features
+- 📩 SMS Expense Detection (UPI)
+- 🧠 AI Category Detection (Food, Travel, Shopping, Bills)
+- 🔔 Notifications after every transaction
 
-## 📊 Analytics
+### 📈 Analytics
+- Category-wise breakdown
+- Daily expense tracking
+- Monthly insights
 
-    Category-wise pie chart
+### 🎨 UI/UX
+- Dark Theme (Premium Look)
+- Smooth Animations
+- Glassmorphism Design
+- Clean typography (Poppins)
 
-    Monthly spending visualization
+---
 
-    Real-time analytics dashboard
+## 🛠️ Tech Stack
 
-## 🔔 Smart Notifications
+### 📱 Frontend
+- Flutter
+- Dart
 
-    Alert when monthly budget is exceeded
+### 🌐 Backend
+- Node.js
+- Express.js
 
-    Notify remaining budget after each transaction
+### 🗄️ Database
+- MongoDB Atlas
 
-    Motivational saving reminders
+### 🔐 Auth & Storage
+- JWT Authentication
+- Flutter Secure Storage
 
-## 📅 History Tracking
-
-    Complete transaction history
-
-    Grouped by month & year
-
-    View date and time of each expense
-
-    Delete expenses
-
-## 🔐 Authentication System
-
-    User signup/login
-
-    JWT authentication
-
-    OTP verification via email
-
-    Forgot password support
-
-## 📱 Real Time Updates
-
-    Uses WebSocket (Socket.IO)
-
-    Dashboard updates instantly when expense is added
-
-## 📊 Budget Control
-
-    Set monthly budget
-
-    Track remaining budget
-
-    Monthly reset system
-
-## 🛠 Tech Stack
-
-### Frontend
-
-    Flutter
-
-    Dart
-
-    FL Chart (analytics graphs)
-
-    Socket.IO client
-
-    SMS reading plugin
-
-    Local Notifications
-
-### Backend
-
-    Node.js
-
-    Express.js
-
-    MongoDB
-
-    JWT Authentication
-
-    Nodemailer (OTP system)
-
-    Socket.IO (real time updates)
-
-### Database
-
-    MongoDB Atlas
+---
 
 ## 📂 Project Structure
 
-    expense_tracker/
-    │
-    ├── lib/
-    │   ├── models/
-    │   │     expense.dart
-    │   │
-    │   ├── screens/
-    │   │     dashboard_screen.dart
-    │   │     add_expense_screen.dart
-    │   │     analytics_screen.dart
-    │   │     history_screen.dart
-    │   │     profile_screen.dart
-    │   │
-    │   ├── services/
-    │   │     api_service.dart
-    │   │     socket_service.dart
-    │   │     sms_service.dart
-    │   │     notification_service.dart
-    │   │
-    │   └── main.dart
-    │
-    └── backend/
-        ├── controllers/
-        │      authController.js
-        │      expenseController.js
-        │
-        ├── models/
-        │      User.js
-        │      Expense.js
-        │
-        ├── routes/
-        │      authRoutes.js
-        │      expenseRoutes.js
-        │
-        └── server.js
 
-## ⚙️ Installation
+expense_tracker/
+│
+├── expense_frontend/ # Flutter App
+├── expense_backend/ # Node.js API
+│
+├── models/
+├── controllers/
+├── routes/
 
-1️⃣ Clone Repository
-git clone [https://github.com/yourusername/expense-tracker.git](https://github.com/Karanx11/Expense-Tracker.git)
 
-### 🖥 Backend Setup
+---
 
-Navigate to backend folder:
+## ⚙️ Installation & Setup
 
+### 1️⃣ Clone Repo
+
+```bash
+git clone https://github.com/your-username/expense-tracker.git
+cd expense-tracker
+2️⃣ Backend Setup
 cd expense_backend
-
-Install dependencies:
-
 npm install
 
-Create .env file:
+Create .env:
 
-    PORT=5000
-    MONGO_URI=your_mongodb_connection
-    JWT_SECRET=your_secret_key
-    EMAIL_USER=your_email
-    EMAIL_PASS=your_app_password
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_secret
+PORT=5000
 
-    Start server:
+Run backend:
 
-    node server.js
-
-### 📱 Flutter Setup
-
-    Navigate to Flutter project:
-
-    cd expense_tracker
-
-    Install packages:
-
-    flutter pub get
-
-    Run the app:
-
-    flutter run
-
-## 🌐 Deployment
-
-    Backend deployed on:
-
-     Render
-
-    Database hosted on:
-
-     MongoDB Atlas
-
-    Update API base URL inside:
-
-     api_service.dart
-
-
-## 👨‍💻 Author
-
-    Karan Sharma
-    Full Stack Developer
-    Flutter Developer | IoT Engineer
-
-### GitHub:
- https://github.com/karanx11
-
-## ⭐ Support
-
-    If you like this project:
-
-    ⭐ Star the repository
-    📜 License
-
-This project is licensed under the MIT License
+npm run dev
+3️⃣ Frontend Setup
+cd expense_frontend
+flutter pub get
+flutter run

@@ -19,8 +19,24 @@ class ApiService {
     return await storage.read(key: "token");
   }
 
-  Future<void> logout() async {
+  /// ✅ NEW: REMOVE TOKEN (IMPORTANT)
+  Future<void> removeToken() async {
     await storage.delete(key: "token");
+  }
+
+  /// ✅ OPTIONAL: LOGOUT API (if backend supports)
+  Future<void> logout() async {
+    try {
+      final res = await http.post(
+        Uri.parse("$baseUrl/auth/logout"),
+        headers: await _headers(),
+      );
+
+      print("LOGOUT STATUS: ${res.statusCode}");
+      print("LOGOUT BODY: ${res.body}");
+    } catch (e) {
+      print("LOGOUT API ERROR: $e");
+    }
   }
 
   /// =========================

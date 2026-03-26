@@ -10,30 +10,63 @@ class MonthlyLimitScreen extends StatefulWidget {
 }
 
 class _MonthlyLimitScreenState extends State<MonthlyLimitScreen> {
-  final limitController = TextEditingController();
+  final TextEditingController limitController = TextEditingController();
+
+  final Color primaryColor = const Color(0xFF606F49);
 
   Future<void> setLimit() async {
-    final res = await ApiService().setLimit({
-      "limit": double.parse(limitController.text),
-    });
+    if (limitController.text.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter a limit")));
+      return;
+    }
+
+    final value = double.tryParse(limitController.text);
+
+    if (value == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Invalid number")));
+      return;
+    }
+
+    final res = await ApiService().setLimit({"limit": value});
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(res["limit"] != null ? "Limit Set" : "Error")),
+      SnackBar(content: Text(res["limit"] != null ? "Limit Updated" : "Error")),
     );
 
     Navigator.pop(context, true);
   }
 
+  InputDecoration inputDecoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: const TextStyle(color: Colors.white54),
+      filled: true,
+      fillColor: const Color(0xFF1E1E1E),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D),
+
       body: Stack(
         children: [
-          /// Background
+          /// 🌌 PREMIUM BACKGROUND
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black, Color(0xFF1A5276)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF0D0D0D), Color(0xFF1A1F17)],
               ),
             ),
           ),
@@ -42,39 +75,71 @@ class _MonthlyLimitScreenState extends State<MonthlyLimitScreen> {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// Header
+                  /// 🔙 HEADER
                   Row(
                     children: [
                       IconButton(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.arrow_back),
+                        color: Colors.white,
                       ),
+                      const SizedBox(width: 8),
                       const Text(
-                        "Set Monthly Limit",
-                        style: TextStyle(fontSize: 20),
+                        "Set Monthly Budget",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 40),
 
+                  /// 💎 GLASS CARD
                   _glassContainer(
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const Text(
+                          "Monthly Limit",
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        /// 💰 INPUT
                         TextField(
                           controller: limitController,
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            hintText: "Enter Monthly Budget",
+                          style: const TextStyle(color: Colors.white),
+                          decoration: inputDecoration(
+                            "Enter your monthly budget",
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 25),
 
-                        ElevatedButton(
-                          onPressed: setLimit,
-                          child: const Text("Save Limit"),
+                        /// 🚀 BUTTON
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onPressed: setLimit,
+                            child: const Text(
+                              "Save Limit",
+                              style: TextStyle(fontSize: 16),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -88,6 +153,7 @@ class _MonthlyLimitScreenState extends State<MonthlyLimitScreen> {
     );
   }
 
+  /// 💎 GLASS CONTAINER
   Widget _glassContainer({required Widget child}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -98,6 +164,7 @@ class _MonthlyLimitScreenState extends State<MonthlyLimitScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: primaryColor.withOpacity(0.2)),
           ),
           child: child,
         ),

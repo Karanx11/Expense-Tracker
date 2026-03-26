@@ -13,28 +13,39 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  final Color primaryColor = const Color(0xFF606F49);
+
+  double progress = 0;
+
   @override
   void initState() {
     super.initState();
-    checkLogin();
+    startLoading();
   }
 
-  Future<void> checkLogin() async {
+  Future<void> startLoading() async {
     final token = await ApiService().getToken();
 
-    await Future.delayed(const Duration(seconds: 2));
+    /// 🔄 FAKE LOADING ANIMATION (SMOOTH)
+    for (int i = 0; i <= 100; i++) {
+      await Future.delayed(const Duration(milliseconds: 20));
+      setState(() {
+        progress = i / 100;
+      });
+    }
 
+    if (!mounted) return;
+
+    /// 🔐 NAVIGATION
     if (token != null && token.isNotEmpty) {
-      /// ✅ Already logged in
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const DashboardScreen()),
       );
     } else {
-      /// ❌ Not logged in
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => LoginScreen()),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     }
   }
@@ -42,56 +53,97 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D),
+
       body: Stack(
         children: [
-          /// Background Gradient
+          /// 🌌 FULL BACKGROUND
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF000000), Color(0xFF1A5276)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
+                colors: [Color(0xFF0D0D0D), Color(0xFF1A1F17)],
               ),
             ),
           ),
 
-          /// Glassmorphism Card
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  padding: const EdgeInsets.all(30),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(
-                        Icons.account_balance_wallet,
-                        size: 60,
-                        color: Colors.white,
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        "Expense Tracker",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Text(
-                        "Smart Finance • Premium Experience",
-                        style: TextStyle(fontSize: 12, color: Colors.white70),
-                      ),
-                    ],
+          /// 💰 CENTER CONTENT (FULL SCREEN STYLE)
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              /// ICON
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF606F49).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet,
+                  size: 60,
+                  color: Color(0xFF606F49),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              /// APP NAME
+              const Text(
+                "Expense Tracker",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              /// TAGLINE
+              const Text(
+                "Smart Finance • Premium Experience",
+                style: TextStyle(color: Colors.white70, fontSize: 13),
+              ),
+            ],
+          ),
+
+          /// 📊 PROGRESS BAR (BOTTOM)
+          Positioned(
+            bottom: 60,
+            left: 20,
+            right: 20,
+            child: Column(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.white10,
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFF606F49)),
                   ),
                 ),
+
+                const SizedBox(height: 8),
+
+                Text(
+                  "${(progress * 100).toInt()}%",
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+
+          /// 👨‍💻 FOOTER
+          const Positioned(
+            bottom: 20,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Text(
+                "Built by Karan",
+                style: TextStyle(color: Colors.white54, fontSize: 12),
               ),
             ),
           ),

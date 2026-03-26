@@ -46,6 +46,8 @@ dependencies:
   firebase_auth: ^6.3.0
   flutter_local_notifications: ^17.0.0
   telephony: ^0.2.0
+  syncfusion_flutter_gauges: ^33.1.45
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

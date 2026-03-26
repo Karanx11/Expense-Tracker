@@ -26,13 +26,25 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     "Other",
   ];
 
-  /// 📅 Pick Date
+  final Color primaryColor = const Color(0xFF606F49);
+
   Future<void> pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2023),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: primaryColor,
+              surface: const Color(0xFF121212),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -40,7 +52,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  /// 💸 Add Expense
   Future<void> addExpense() async {
     if (amountController.text.isEmpty) {
       ScaffoldMessenger.of(
@@ -71,7 +82,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       if (res["expense"] != null) {
         double remaining = (res["remaining"] ?? 0).toDouble();
 
-        /// 🔔 SIMPLE NOTIFICATION (FINAL)
         await NotificationService.show(
           "Budget Update 💰",
           "₹$remaining left this month",
@@ -103,11 +113,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
-  /// 🎨 UI
+  InputDecoration inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.white70),
+      filled: true,
+      fillColor: const Color(0xFF1E1E1E),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Expense")),
+      backgroundColor: const Color(0xFF0D0D0D),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text("Add Expense"),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -116,59 +144,72 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "Amount",
-                border: OutlineInputBorder(),
-              ),
+              style: const TextStyle(color: Colors.white),
+              decoration: inputDecoration("Amount"),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             /// 📝 Note
             TextField(
               controller: noteController,
-              decoration: const InputDecoration(
-                labelText: "Note",
-                border: OutlineInputBorder(),
-              ),
+              style: const TextStyle(color: Colors.white),
+              decoration: inputDecoration("Note"),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             /// 📂 Category
             DropdownButtonFormField(
+              dropdownColor: const Color(0xFF1E1E1E),
               value: selectedCategory,
+              style: const TextStyle(color: Colors.white),
               items: categories
                   .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
                   .toList(),
               onChanged: (val) =>
                   setState(() => selectedCategory = val.toString()),
-              decoration: const InputDecoration(
-                labelText: "Category",
-                border: OutlineInputBorder(),
-              ),
+              decoration: inputDecoration("Category"),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             /// 📅 Date Picker
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Date: ${selectedDate.toLocal().toString().split(' ')[0]}",
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                   ),
-                ),
-                TextButton(onPressed: pickDate, child: const Text("Pick Date")),
-              ],
+                  TextButton(
+                    onPressed: pickDate,
+                    child: Text("Pick", style: TextStyle(color: primaryColor)),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
 
             /// 🚀 Submit Button
             SizedBox(
               width: double.infinity,
+              height: 55,
               child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
                 onPressed: isLoading ? null : addExpense,
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text("Add Expense"),
+                    : const Text("Add Expense", style: TextStyle(fontSize: 16)),
               ),
             ),
           ],
