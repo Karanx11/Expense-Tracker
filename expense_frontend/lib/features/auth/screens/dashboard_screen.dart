@@ -30,7 +30,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// ================= FETCH DATA =================
-  /// ================= FETCH DATA =================
   Future<void> fetchData() async {
     try {
       final res = await ApiService().getDashboard();
