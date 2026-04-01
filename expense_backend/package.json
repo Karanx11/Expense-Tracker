@@ -17,6 +17,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.3.3"
   },
+  "engines": {
+  "node": "18.x"
+  },
   "devDependencies": {
     "nodemon": "^3.1.14"
   }
