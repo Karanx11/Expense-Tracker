@@ -1,5 +1,7 @@
 # 💸 Expense Tracker App
 
+🔗 Live Demo: https://expense-tracker-website-9iy2.onrender.com/
+
 A full-stack **Expense Tracker App** built with **Flutter (Frontend)** and **FireBase + Node.js + Express + MongoDB (Backend)**.
 It helps users manage daily expenses, set monthly budgets, and track spending visually.
 
@@ -168,7 +170,6 @@ flutter run
 
 * 📊 Charts & Analytics
 * ☁️ Cloud Deployment
-* 🔔 Notifications
 * 📤 Export reports (PDF/Excel)
 * 🤖 AI-based expense insights
 
@@ -177,7 +178,6 @@ flutter run
 ## 👨‍💻 Author
 
 **Karan Sharma**
-🎓 B.Tech CSE (AI & ML)
 💼 Aspiring Full Stack Developer
 
 ---
