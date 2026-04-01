@@ -8,7 +8,7 @@ import '../../../shared/services/api_service.dart';
 import '../../expense/screens/add_expense_screen.dart';
 import '../../expense/screens/monthly_limit_screen.dart';
 import '../../auth/screens/login_screen.dart';
-import '../../auth/screens/history_screen.dart'; // ✅ ADDED
+import '../../auth/screens/history_screen.dart'; //
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -52,7 +52,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       await checkMonthlyReset();
     } catch (e) {
-      print("🔥 FETCH ERROR: $e"); // 👈 IMPORTANT DEBUG
+      print("FETCH ERROR: $e");
 
       if (!mounted) return;
 

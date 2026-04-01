@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  static const String baseUrl = "http://10.181.75.31:5000/api";
+  static const String baseUrl = "https://expense-tracker-utc3.onrender.com/api";
 
   final FlutterSecureStorage storage = const FlutterSecureStorage();
 
