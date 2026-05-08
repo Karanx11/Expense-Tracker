@@ -173,7 +173,7 @@ flutter run
 ## 👨‍💻 Author
 
 **Karan Sharma**
-💼 Aspiring Full Stack Developer
+💼 Aspiring Full Stack Developer | Flutter Developer
 
 ---
 
